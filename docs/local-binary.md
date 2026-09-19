@@ -1,7 +1,19 @@
 # Test a PR-built Betamax CLI
 
-Use the render action's `binary` input when you need previews from the Betamax source in a pull
-request. Leaving `binary` empty keeps the checksum-verified release download as the default.
+Changes to Betamax's font fallback, terminal layout or video timing need to be exercised by a CLI
+that contains those changes. A downloaded release cannot show what the PR's renderer will produce.
+
+Build the CLI from the PR and use it to record representative tapes. Reviewers can inspect the
+resulting images and animations in the PR without building Betamax locally. This connects the
+proposed code to visible output; keep PNG/JSON fidelity assertions and playback checks alongside it
+to catch failures that visual review may miss.
+
+Choose the executable according to what you are testing:
+
+- **Changes to your terminal application:** leave `binary` unset. A checksum-verified Betamax
+  release records the application you build in the render job.
+- **Changes to Betamax itself:** build its CLI from the PR and set `binary` to that executable. The
+  recordings then exercise the candidate renderer, parser and media writers.
 
 `binary: target/debug/betamax` names a file relative to `working-directory`, which defaults to the
 checkout root. It takes precedence over `version` and `sha256`; neither release setting is validated
@@ -48,7 +60,7 @@ jobs:
       - name: Build the PR's CLI
         run: mise exec -- cargo build --locked -p betamax
       - name: Record previews with that CLI
-        uses: joshka/betamax-action@BINARY_ACTION_COMMIT
+        uses: joshka/betamax-action@46a3673d7a5dd7696b862848cb7e9902d797094d
         with:
           binary: target/debug/betamax
           tapes: examples/basic.tape
@@ -74,6 +86,3 @@ Optional [native attachments](attachments.md) need a separately configured, repo
 token in the trusted report job. That mode independently checks downloaded media digests, signatures
 and byte limits before uploading, and never extracts archives. It must not rely on the render job's
 checks or manifest as a security decision.
-
-Keep specialized PNG/JSON fidelity assertions and platform-specific tests alongside the action. The
-preview gallery supplements those diagnostics; it does not replace them.

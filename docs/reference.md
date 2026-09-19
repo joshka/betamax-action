@@ -25,6 +25,10 @@ hyphens and begin with a letter or digit.
 
 ## Local executable selection
 
+Use `binary` to exercise changes to Betamax itself before they are released. Leaving it unset uses a
+verified release to record your application. See [the local-CLI guide](local-binary.md) for a worked
+PR build and the resulting review workflow.
+
 Set the render input `binary` to an executable file relative to `working-directory`, or an absolute
 path inside that directory. The file must exist and be executable; directories, paths outside the
 working directory and symlinks in any path component are rejected. Build the CLI before the action

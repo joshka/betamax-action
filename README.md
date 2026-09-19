@@ -3,6 +3,11 @@
 Render [Betamax](https://github.com/joshka/betamax) terminal tapes in GitHub Actions and update one
 pull request comment with the results.
 
+Give reviewers a way to inspect terminal layouts, colors and interactions without building your
+application locally. Record representative interactions in tapes, then let CI refresh the previews
+when the PR changes. Keep automated assertions alongside the recordings to check behavior and catch
+regressions that a visual review may miss.
+
 The default comment links to a downloadable HTML gallery with GIF, PNG, WebP and video previews.
 Galleries follow the reader's light or dark theme. Each media file is also available as an
 individual artifact. Generated media stays out of your repository.
@@ -27,7 +32,7 @@ application setup and build steps before the rendering action. The example in th
 The rendering step looks like this; the setup guide includes both complete workflows.
 
 ```yaml
-- uses: joshka/betamax-action@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
+- uses: joshka/betamax-action@46a3673d7a5dd7696b862848cb7e9902d797094d
   with:
     tapes: demos/**/*.tape
     formats: gif,png,webp
