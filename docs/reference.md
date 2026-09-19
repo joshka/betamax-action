@@ -65,7 +65,8 @@ GitHub artifact access still requires sign-in and expires under the repository's
 | Input              | Default               | Behavior                                                             |
 | ------------------ | --------------------- | -------------------------------------------------------------------- |
 | `workflow`         | Required              | Source workflow filename, for example `betamax.yml`.                 |
-| `comment-key`      | `betamax`             | Matches the rendering action's identifier.                           |
+| `comment-key`      | `betamax`             | Identifies the comment to create or update.                          |
+| `artifact-key`     | Same as `comment-key` | Render action key whose artifacts are selected.                      |
 | `mode`             | `artifacts`           | `artifacts` links galleries; `attachments` adds native inline media. |
 | `token`            | `${{ github.token }}` | Built-in token with Actions read and PR write permissions.           |
 | `attachment-token` | Empty                 | User token for native uploads only.                                  |

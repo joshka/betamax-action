@@ -29,6 +29,35 @@ Keep `token` at its default. The Actions bot owns and updates the comment; the u
 only to GitHub's native upload endpoint. Never provide this secret to the render job or a
 `pull_request_target` workflow that executes PR code.
 
+## Compare both modes on one PR
+
+Use two report steps to keep a gallery-link comment and a native-attachment comment. Both read the
+same rendered artifacts. `comment-key` identifies the comment; `artifact-key` selects the render
+job's `comment-key` and defaults to the report's own key when omitted.
+
+```yaml
+steps:
+  - name: Gallery links
+    uses: joshka/betamax-action/report@REPORT_COMMIT_SHA
+    with:
+      workflow: betamax.yml
+      comment-key: betamax
+  - name: Native attachments
+    uses: joshka/betamax-action/report@REPORT_COMMIT_SHA
+    with:
+      workflow: betamax.yml
+      comment-key: betamax-native
+      artifact-key: betamax
+      mode: attachments
+      attachment-token: ${{ secrets.BETAMAX_ATTACHMENT_TOKEN }}
+```
+
+Replace `REPORT_COMMIT_SHA` with a reviewed commit that includes `artifact-key`. Keep both steps in
+one trusted report job with the permissions and concurrency group from the
+[setup guide](getting-started.md#update-the-pr-comment). Do not rerun the application or give the
+render job a PAT. Each reporter updates only its own bot comment, including on later commits and
+partial reruns.
+
 ## Upload behavior
 
 The reporter downloads individual raw media artifacts into memory, checks their recorded SHA-256

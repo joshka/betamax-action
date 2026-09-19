@@ -8,8 +8,10 @@ inputs:
     description: Expected source workflow filename, such as betamax.yml
     required: true
   comment-key:
-    description: Identifier shared with the render action
+    description: Identifier for the comment to create or update
     default: betamax
+  artifact-key:
+    description: Render action comment-key to read; defaults to this report comment-key
   mode:
     description: artifacts for gallery links, or attachments for inline media
     default: artifacts
