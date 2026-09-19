@@ -69,7 +69,7 @@ receive the requested output unchanged and fail visibly; see the
 
 ## Betamax 0.1.19
 
-The default now selects
+The previous default selected
 [Betamax 0.1.19](https://github.com/joshka/betamax/releases/tag/betamax-v0.1.19). Both Linux
 archives were downloaded and their SHA-256 hashes matched GitHub’s release asset digests:
 
@@ -78,8 +78,23 @@ archives were downloaded and their SHA-256 hashes matched GitHub’s release ass
 | aarch64-unknown-linux-gnu | `1694c35935675d9eac567818cee226fdb8fe8cc75035fc68229b396b99ca6b68` |
 | x86_64-unknown-linux-gnu  | `db65ba4b6b57239e0ee26b96970a9277ccba6c8eef2b29c90c829ba9721a944a` |
 
+The [0.1.19 integration run](https://github.com/joshka/betamax-action/actions/runs/35424306802)
+passes GIF/PNG/WebP on Linux x64 and ARM64, MP4/WebM on x64, and WebP through the local executable
+path.
+
+## Betamax 0.1.20
+
+The default now selects
+[Betamax 0.1.20](https://github.com/joshka/betamax/releases/tag/betamax-v0.1.20). Both Linux
+archives were downloaded and their SHA-256 hashes matched GitHub’s release asset digests:
+
+| Target                    | SHA-256                                                            |
+| ------------------------- | ------------------------------------------------------------------ |
+| aarch64-unknown-linux-gnu | `c5b0729b60a407df397cb62a897cc4315cb603220d845e86b92bf5fa2b74b397` |
+| x86_64-unknown-linux-gnu  | `389e890509117fca4aee65192dbc92c4691fdd479140c57e5a295b4bf27d3d69` |
+
 Live rendering on x64 and ARM64, native formats, and the local executable path remain unverified for
-0.1.19. The integration evidence above applies to earlier versions.
+0.1.20. The integration evidence above applies to earlier versions.
 
 ## Local executable selection
 
