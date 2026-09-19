@@ -5,6 +5,10 @@ import { digest, regularPath } from "./common.js";
 import { execute } from "./process.js";
 
 const CHECKSUMS = {
+  "0.1.19-aarch64-unknown-linux-gnu":
+    "1694c35935675d9eac567818cee226fdb8fe8cc75035fc68229b396b99ca6b68",
+  "0.1.19-x86_64-unknown-linux-gnu":
+    "db65ba4b6b57239e0ee26b96970a9277ccba6c8eef2b29c90c829ba9721a944a",
   "0.1.18-x86_64-unknown-linux-gnu":
     "c04bc6716963d7d5158fa0504049776bb0acab693335fbfbd9e393b87a297143",
   "0.1.18-aarch64-unknown-linux-gnu":

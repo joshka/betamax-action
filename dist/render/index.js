@@ -98671,6 +98671,8 @@ function execute(program, args, { cwd, input, log: log2, timeout = 12e4, env = p
 
 // src/install.js
 var CHECKSUMS = {
+  "0.1.19-aarch64-unknown-linux-gnu": "1694c35935675d9eac567818cee226fdb8fe8cc75035fc68229b396b99ca6b68",
+  "0.1.19-x86_64-unknown-linux-gnu": "db65ba4b6b57239e0ee26b96970a9277ccba6c8eef2b29c90c829ba9721a944a",
   "0.1.18-x86_64-unknown-linux-gnu": "c04bc6716963d7d5158fa0504049776bb0acab693335fbfbd9e393b87a297143",
   "0.1.18-aarch64-unknown-linux-gnu": "beb6abcd40a400fbad14b8ee418efa790710ce7fdc4093614044d009669e7f56",
   "0.1.17-x86_64-unknown-linux-gnu": "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
@@ -101499,7 +101501,7 @@ try {
       root,
       directory: path12.join(directory, "bin"),
       binary: suppliedBinary,
-      version: getInput("version") || "0.1.18",
+      version: getInput("version") || "0.1.19",
       checksum: getInput("sha256"),
       dependencies: getBooleanInput("install-dependencies")
     });

@@ -53,7 +53,7 @@ all 13
 [native attachments](https://github.com/joshka/betamax-action/pull/5#issuecomment-5739233701),
 including the three native WebP captures, without upload fallbacks.
 
-The default selects
+The previous default selected
 [Betamax 0.1.18](https://github.com/joshka/betamax/releases/tag/betamax-v0.1.18). Both Linux
 archives were downloaded and hashed against GitHub's published release asset digests before changing
 the default:
@@ -66,6 +66,20 @@ the default:
 Tests cover unsupported and silently missing native WebP output. Older explicitly selected binaries
 receive the requested output unchanged and fail visibly; see the
 [format policy](reference.md#supported-formats).
+
+## Betamax 0.1.19
+
+The default now selects
+[Betamax 0.1.19](https://github.com/joshka/betamax/releases/tag/betamax-v0.1.19). Both Linux
+archives were downloaded and their SHA-256 hashes matched GitHub’s release asset digests:
+
+| Target                    | SHA-256                                                            |
+| ------------------------- | ------------------------------------------------------------------ |
+| aarch64-unknown-linux-gnu | `1694c35935675d9eac567818cee226fdb8fe8cc75035fc68229b396b99ca6b68` |
+| x86_64-unknown-linux-gnu  | `db65ba4b6b57239e0ee26b96970a9277ccba6c8eef2b29c90c829ba9721a944a` |
+
+Live rendering on x64 and ARM64, native formats, and the local executable path remain unverified for
+0.1.19. The integration evidence above applies to earlier versions.
 
 ## Local executable selection
 
