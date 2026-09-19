@@ -27,6 +27,11 @@ jobs:
           - variant: arm
             os: ubuntu-24.04-arm
             formats: gif,png
+          - variant: local
+            os: ubuntu-24.04
+            formats: gif,png
+            binary: .artifacts/local-cli/betamax
+            version: must-not-download
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,10 +42,15 @@ jobs:
           components: rustfmt, clippy
       - name: Build the demo
         run: cargo build --locked --manifest-path examples/ratatui/Cargo.toml
+      - name: Prepare the local executable fixture
+        if: matrix.binary != ''
+        run: node scripts/prepare-local-binary.mjs
       - name: Render terminal previews
         id: previews
         uses: $/
         with:
+          binary: ${{ matrix.binary }}
+          version: ${{ matrix.version || '0.1.17' }}
           tapes: examples/tapes/*.tape
           formats: ${{ matrix.formats }}
           variant: ${{ matrix.variant }}
@@ -49,3 +59,6 @@ jobs:
         env:
           BETAMAX_OUTPUT_DIRECTORY: ${{ steps.previews.outputs.output-directory }}
         run: node scripts/verify-media.mjs
+      - name: Verify the supplied executable ran
+        if: matrix.binary != ''
+        run: test -f .artifacts/local-binary-used

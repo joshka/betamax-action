@@ -21,6 +21,22 @@ The default reporter reads API metadata only. It verifies the source repository,
 run attempt, PR head and head repository. It locates its comment by marker and bot author. Artifact
 names cannot specify a PR number, comment body or destination URL.
 
+## PR-built executables
+
+A local `binary` is fully untrusted, including when it came from a successful build or a path inside
+the checkout. Path and executable-bit checks catch configuration mistakes; they are not a sandbox or
+a provenance check. The build or executable can compromise every step and process on its runner,
+modify the action's code, forge media, or replace validation results.
+
+Build and execute PR code only in a no-secrets, read-only `pull_request` job on an ephemeral runner.
+Never expose a PAT in that job, including in a later step. Publishing must use a separate
+`workflow_run` job on a fresh runner with pinned reporter code, no PR checkout, no PR executable
+download or execution, and no restored PR cache.
+
+Gallery reporting independently validates API metadata and does not download media. Native reporting
+independently checks the downloaded bytes as described below. Neither mode trusts a manifest or
+validation result from the build/render runner as proof that its artifacts are safe.
+
 ## Optional native uploads
 
 Native mode introduces a user token and untrusted media bytes into the reporter. The token is sent
@@ -36,8 +52,9 @@ published with a user credential. See [native attachment setup](docs/attachments
 ## Dependency and release policy
 
 Workflow dependencies use full commit SHAs. Dependabot groups routine updates and waits seven days
-before proposing new versions. Betamax binaries have a checked archive digest. The action's runtime
-JavaScript is bundled in `dist/`; CI rebuilds it and rejects drift from source.
+before proposing new versions. Downloaded Betamax releases have a checked archive digest; local
+executables bypass that check. The action's runtime JavaScript is bundled in `dist/`; CI rebuilds it
+and rejects drift from source.
 
 The repository runs actionlint and zizmor during development. CI runs zizmor and tests the
 reporter's permission boundaries with mocked API responses. The live demo workflow exercises

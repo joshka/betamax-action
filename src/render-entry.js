@@ -4,7 +4,7 @@ import { mkdtemp, readdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { identifier, integer, regularPath } from "./common.js";
-import { install } from "./install.js";
+import { prepareBinary } from "./install.js";
 import { parseFormats, render } from "./render.js";
 
 try {
@@ -27,15 +27,22 @@ try {
   const timeout =
     integer(core.getInput("timeout-seconds") || "120", "timeout-seconds", 1, 1800) * 1000;
   const retentionDays = integer(core.getInput("retention-days") || "14", "retention-days", 1, 90);
-  core.info("Installing a verified Betamax release and rendering terminal tapes");
+  const suppliedBinary = core.getInput("binary");
+  core.info(
+    suppliedBinary
+      ? "Rendering tapes with the supplied Betamax executable"
+      : "Installing a verified Betamax release and rendering terminal tapes",
+  );
   core.setOutput("output-directory", directory);
   try {
-    const binary = await install(
-      path.join(directory, "bin"),
-      core.getInput("version") || "0.1.17",
-      core.getInput("sha256"),
-      core.getBooleanInput("install-dependencies"),
-    );
+    const binary = await prepareBinary({
+      root,
+      directory: path.join(directory, "bin"),
+      binary: suppliedBinary,
+      version: core.getInput("version") || "0.1.17",
+      checksum: core.getInput("sha256"),
+      dependencies: core.getBooleanInput("install-dependencies"),
+    });
     const result = await render({
       root,
       directory,

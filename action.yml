@@ -16,13 +16,18 @@ inputs:
     default: gif,png
   extra-outputs:
     description: Newline-separated globs for additional PNG, GIF, WebP, JPEG, MP4 or WebM files
+  binary:
+    description:
+      Executable path inside working-directory; bypasses release download and ignores version/sha256
   version:
-    description: Exact Betamax CLI version
+    description: Exact Betamax CLI release version; ignored when binary is set
     default: "0.1.17"
   sha256:
-    description: Required archive checksum for versions without a bundled checksum
+    description:
+      Required archive checksum for versions without a bundled checksum; ignored when binary is set
   install-dependencies:
-    description: Install ffmpeg, DejaVu, JetBrains Mono and Noto fonts on Ubuntu
+    description:
+      Install ffmpeg and fonts with apt in either binary mode; disable when already provided
     default: "true"
   timeout-seconds:
     description: Maximum execution time per tape

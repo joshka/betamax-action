@@ -39,6 +39,7 @@ release; there is no `v1` tag yet.
 ## Documentation
 
 - [Set up previews and PR comments](docs/getting-started.md)
+- [Test a PR-built Betamax CLI](docs/local-binary.md)
 - [Inputs, outputs and supported formats](docs/reference.md)
 - [Troubleshoot previews](docs/getting-started.md#troubleshoot-previews)
 - [Enable native attachments](docs/attachments.md)
