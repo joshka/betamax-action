@@ -71,7 +71,7 @@ jobs:
         with:
           persist-credentials: false
       # Install your application's toolchain and build it here.
-      - uses: joshka/betamax-action@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+      - uses: joshka/betamax-action@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
         with:
           tapes: demos/**/*.tape
           formats: gif,png,webp
@@ -110,7 +110,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+      - uses: joshka/betamax-action/report@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
         with:
           workflow: betamax.yml
 ```

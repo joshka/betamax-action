@@ -45,12 +45,12 @@ job's `comment-key` and defaults to the report's own key when omitted.
 ```yaml
 steps:
   - name: Gallery links
-    uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+    uses: joshka/betamax-action/report@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
     with:
       workflow: betamax.yml
       comment-key: betamax
   - name: Native attachments
-    uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+    uses: joshka/betamax-action/report@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
     with:
       workflow: betamax.yml
       comment-key: betamax-native

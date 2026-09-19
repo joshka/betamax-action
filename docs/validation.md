@@ -5,7 +5,7 @@ not make the native upload endpoint a supported GitHub REST API.
 
 ## Automated checks
 
-[CI](https://github.com/joshka/betamax-action/actions/runs/35416588706) passes 32 tests, JavaScript
+[CI](https://github.com/joshka/betamax-action/actions/runs/35418745529) passes 33 tests, JavaScript
 and Markdown linting, formatting, bundle comparison, Rust formatting and Clippy, dependency audit,
 and zizmor 1.30.1. Tests cover malformed action manifests, path containment, process timeouts,
 failed captures, API pagination, bot comment ownership, fork association, stale heads, run attempts,
@@ -30,6 +30,11 @@ These checks caught Betamax 0.1.15's direct video writer dropping frame delays. 
 video timing upstream. The action now requests MP4/WebM directly and keeps GIF conversion only for
 WebP, which Betamax does not write natively. See the
 [format tradeoffs](reference.md#supported-formats-and-conversion).
+
+The [0.1.17 integration run](https://github.com/joshka/betamax-action/actions/runs/35418745511)
+passes the same dimension and duration assertions with native MP4/WebM output. Its
+[reporter run](https://github.com/joshka/betamax-action/actions/runs/35418824523) also passes
+gallery and native-attachment publication.
 
 ## PR reporting
 

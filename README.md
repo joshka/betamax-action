@@ -27,7 +27,7 @@ application setup and build steps before the rendering action. The example in th
 The rendering step looks like this; the setup guide includes both complete workflows.
 
 ```yaml
-- uses: joshka/betamax-action@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+- uses: joshka/betamax-action@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
   with:
     tapes: demos/**/*.tape
     formats: gif,png,webp
