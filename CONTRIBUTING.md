@@ -20,6 +20,9 @@ Commit `dist/` and dependency lockfiles with source changes. Consumers execute t
 bundle; they do not install npm dependencies. CI compares a fresh bundle with the committed files.
 Legal notices for bundled dependencies are next to each entry point.
 
+The Markdown linter pins a vulnerable TOML parser transitively. The package override selects
+`smol-toml` 1.8.0 until the linter updates its dependency. `npm audit` checks all dependencies.
+
 ## Test layers
 
 Unit and integration tests cover tape discovery, paths, subprocess timeouts, HTML escaping, media
