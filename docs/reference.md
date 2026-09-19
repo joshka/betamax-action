@@ -12,8 +12,8 @@ comments. For complete workflows, follow the [setup guide](getting-started.md).
 | `formats`              | `gif,png`          | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`. |
 | `extra-outputs`        | Empty              | Globs for additional media, relative to the working directory.        |
 | `binary`               | Empty              | Local executable path; overrides release version and checksum.        |
-| `version`              | `0.1.18`           | Release version; ignored when `binary` is set.                        |
-| `sha256`               | Bundled for 0.1.18 | Release archive digest; ignored when `binary` is set.                 |
+| `version`              | `0.1.19`           | Release version; ignored when `binary` is set.                        |
+| `sha256`               | Bundled for 0.1.19 | Release archive digest; ignored when `binary` is set.                 |
 | `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
 | `timeout-seconds`      | `120`              | Time limit for each tape; 1–1800.                                     |
 | `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |

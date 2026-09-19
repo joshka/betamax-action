@@ -21,7 +21,7 @@ inputs:
       Executable path inside working-directory; bypasses release download and ignores version/sha256
   version:
     description: Exact Betamax CLI release version; ignored when binary is set
-    default: "0.1.18"
+    default: "0.1.19"
   sha256:
     description:
       Required archive checksum for versions without a bundled checksum; ignored when binary is set

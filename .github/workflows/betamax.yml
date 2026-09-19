@@ -50,7 +50,7 @@ jobs:
         uses: $/
         with:
           binary: ${{ matrix.binary }}
-          version: ${{ matrix.version || '0.1.18' }}
+          version: ${{ matrix.version || '0.1.19' }}
           tapes: examples/tapes/*.tape
           formats: ${{ matrix.formats }}
           variant: ${{ matrix.variant }}
