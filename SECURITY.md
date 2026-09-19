@@ -22,34 +22,23 @@ The default reporter reads API metadata only. It verifies the source repository,
 run attempt, PR head and head repository. It locates its comment by marker and bot author. Artifact
 names cannot specify a PR number, comment body or destination URL.
 
-## PR-built executables
+A PR-built executable can compromise every step on its runner, including later steps, and forge
+media or validation results. Path checks and a successful build do not make it trusted. Neither
+reporting mode accepts a render manifest as authorization or proof that an artifact is safe.
 
-A local `binary` is fully untrusted, including when it came from a successful build or a path inside
-the checkout. Path and executable-bit checks catch configuration mistakes; they are not a sandbox or
-a provenance check. The build or executable can compromise every step and process on its runner,
-modify the action's code, forge media, or replace validation results.
+## Attachment uploads
 
-Build and execute PR code only in a no-secrets, read-only `pull_request` job on an ephemeral runner.
-Never expose a PAT in that job, including in a later step. Publishing must use a separate
-`workflow_run` job on a fresh runner with pinned reporter code, no PR checkout, no PR executable
-download or execution, and no restored PR cache.
-
-Gallery reporting independently validates API metadata and does not download media. Native reporting
-independently checks the downloaded bytes as described below. Neither mode trusts a manifest or
-validation result from the build/render runner as proof that its artifacts are safe.
-
-## Optional native uploads
-
-Native mode introduces a user token and untrusted media bytes into the reporter. The token is sent
-only to `uploads.github.com`; comment API calls continue to use the Actions token. The reporter
+Attachment mode introduces a user token and untrusted media bytes into the reporter. The token is
+sent only to `uploads.github.com`; comment API calls continue to use the Actions token. The reporter
 follows artifact redirects only to approved GitHub/Azure storage hosts, without forwarding a token,
 and rejects further redirects. It verifies the artifact digest, enforces byte limits and checks
-media signatures. It never extracts archives. These checks constrain the upload path; they do not
-establish that attacker-controlled media is harmless to every downstream decoder. The digest proves
-that bytes match the uploaded artifact, not that their producer is trustworthy. Signature checks
-inspect magic bytes, not complete media structure; they do not decode, sanitize, or rule out
-polyglots, malformed payloads, or decoder vulnerabilities. Validation performed on the render runner
-can be forged by PR code and is not a security boundary.
+media signatures. It never extracts archives.
+
+A matching digest confirms that the downloaded bytes match the uploaded artifact. The artifact can
+still contain malicious media. Signature checks inspect only magic bytes; they do not decode or
+sanitize the file. Polyglots, malformed payloads and decoder vulnerabilities remain possible. PR
+code can also forge validation results on the render runner, so the reporter performs its own
+checks.
 
 Store the repository-scoped attachment PAT only in a dedicated environment restricted explicitly to
 the trusted default branch, with no wildcard or tag rules. Remove any repository-level copy after
@@ -57,19 +46,13 @@ confirming the environment secret exists. Only the pinned reporter on a fresh ru
 comments continue to use `GITHUB_TOKEN`. Environment restrictions do not isolate workflows from
 other trusted default-branch workflows or repository administrators. Add required reviewers if your
 repository requires approval before publishing fork media. See
-[native attachment setup](docs/attachments.md).
+[inline attachment setup](docs/attachments.md).
 
 ## Dependency and release policy
 
-Workflow dependencies use full commit SHAs. Dependabot groups routine updates and waits seven days
-before proposing new versions. Downloaded Betamax releases have a checked archive digest; local
-executables bypass that check. The action's runtime JavaScript is bundled in `dist/`; CI rebuilds it
-and rejects drift from source.
-
-The repository runs actionlint and zizmor during development. CI runs zizmor and tests the
-reporter's permission boundaries with mocked API responses. The live demo workflow exercises
-rendering and artifact uploads. Passing a capture test does not establish visual correctness or
-sandbox a tape.
+Workflow dependencies use full commit SHAs. Downloaded Betamax releases have a checked archive
+digest; local executables bypass that check. The action's runtime JavaScript is bundled in `dist/`;
+CI rebuilds it and rejects drift from source.
 
 Repository administrators should require reviewed changes to actions, workflows, dependencies and
 bundles before moving a stable action tag. CODEOWNERS identifies the maintainer; enforcement
