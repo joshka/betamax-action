@@ -34,8 +34,10 @@ signatures, byte limits, API pagination, bot comment ownership, fork association
 attempts and credential routing. Tests use temporary files and injected HTTP responses.
 
 The Betamax workflow builds the Ratatui fixture and renders GIF/PNG/WebP and MP4/WebM in separate
-matrix jobs. It uploads actual media and galleries. A report workflow pinned to a reviewed commit on
-the default branch exercises PR comment creation and updates.
+matrix jobs. It uploads actual media and galleries. A local-executable variant uses an invocation
+marker and an invalid release version to prove that `binary` runs and bypasses release selection. A
+report workflow pinned to a reviewed commit on the default branch exercises PR comment creation and
+updates.
 
 For a live reporter change, first test source behavior locally. Publish a reviewed action commit,
 then update the default-branch reporter pin to that commit. A PR cannot safely test arbitrary new

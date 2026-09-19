@@ -11,8 +11,9 @@ comments. For complete workflows, follow the [setup guide](getting-started.md).
 | `working-directory`    | `.`                | Directory inside the checkout for CLI execution and relative paths.   |
 | `formats`              | `gif,png`          | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`. |
 | `extra-outputs`        | Empty              | Globs for additional media, relative to the working directory.        |
-| `version`              | `0.1.17`           | Exact Betamax CLI version.                                            |
-| `sha256`               | Bundled for 0.1.17 | Archive digest; required for other versions.                          |
+| `binary`               | Empty              | Local executable path; overrides release version and checksum.        |
+| `version`              | `0.1.17`           | Release version; ignored when `binary` is set.                        |
+| `sha256`               | Bundled for 0.1.17 | Release archive digest; ignored when `binary` is set.                 |
 | `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
 | `timeout-seconds`      | `120`              | Time limit for each tape and each animation conversion; 1–1800.       |
 | `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |
@@ -21,6 +22,26 @@ comments. For complete workflows, follow the [setup guide](getting-started.md).
 
 Rendering identifiers (`comment-key` and `variant`) contain 1–40 lowercase letters, digits or
 hyphens and begin with a letter or digit.
+
+## Local executable selection
+
+Use `binary` to exercise changes to Betamax itself before they are released. Leaving it unset uses a
+verified release to record your application. See [the local-CLI guide](local-binary.md) for a worked
+PR build and the resulting review workflow.
+
+Set the render input `binary` to an executable file relative to `working-directory`, or an absolute
+path inside that directory. The file must exist and be executable; directories, paths outside the
+working directory and symlinks in any path component are rejected. Build the CLI before the action
+runs. Invalid paths fail before dependency installation, without falling back to a release.
+
+This is one literal path: spaces are allowed, but arguments, `~`, environment-variable expansion and
+`PATH` lookup are not supported. Use Actions expressions to construct a path when needed. `version`
+and `sha256` are ignored when `binary` is nonempty. The `install-dependencies` input still controls
+apt installation of ffmpeg and fonts in either mode.
+
+Path checks do not sandbox or verify the executable. A PR-built CLI can compromise the entire
+runner; use the [isolated build/render example](local-binary.md) and publish from a separate trusted
+job. With no `binary` input, the action downloads and verifies the selected release as before.
 
 ## File discovery and paths
 

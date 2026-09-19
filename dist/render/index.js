@@ -5725,7 +5725,7 @@ var require_client_h1 = __commonJS({
       kResume,
       kHTTPContext
     } = require_symbols();
-    var constants3 = require_constants2();
+    var constants4 = require_constants2();
     var EMPTY_BUF = Buffer.alloc(0);
     var FastBuffer = Buffer[Symbol.species];
     var addListener = util3.addListener;
@@ -5800,7 +5800,7 @@ var require_client_h1 = __commonJS({
       constructor(client2, socket, { exports: exports3 }) {
         assert4(Number.isFinite(client2[kMaxHeadersSize]) && client2[kMaxHeadersSize] > 0);
         this.llhttp = exports3;
-        this.ptr = this.llhttp.llhttp_alloc(constants3.TYPE.RESPONSE);
+        this.ptr = this.llhttp.llhttp_alloc(constants4.TYPE.RESPONSE);
         this.client = client2;
         this.socket = socket;
         this.timeout = null;
@@ -5895,11 +5895,11 @@ var require_client_h1 = __commonJS({
             currentBufferRef = null;
           }
           const offset = llhttp.llhttp_get_error_pos(this.ptr) - currentBufferPtr;
-          if (ret !== constants3.ERROR.OK) {
+          if (ret !== constants4.ERROR.OK) {
             const body2 = data.subarray(offset);
-            if (ret === constants3.ERROR.PAUSED_UPGRADE) {
+            if (ret === constants4.ERROR.PAUSED_UPGRADE) {
               this.onUpgrade(body2);
-            } else if (ret === constants3.ERROR.PAUSED) {
+            } else if (ret === constants4.ERROR.PAUSED) {
               this.paused = true;
               socket.unshift(body2);
             } else {
@@ -5922,10 +5922,10 @@ var require_client_h1 = __commonJS({
         } finally {
           currentParser = null;
         }
-        if (ret === constants3.ERROR.OK) {
+        if (ret === constants4.ERROR.OK) {
           return null;
         }
-        if (ret === constants3.ERROR.PAUSED || ret === constants3.ERROR.PAUSED_UPGRADE) {
+        if (ret === constants4.ERROR.PAUSED || ret === constants4.ERROR.PAUSED_UPGRADE) {
           this.paused = true;
           return null;
         }
@@ -5942,7 +5942,7 @@ var require_client_h1 = __commonJS({
           const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
           message = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
         }
-        return new HTTPParserError(message, constants3.ERROR[ret], data);
+        return new HTTPParserError(message, constants4.ERROR[ret], data);
       }
       destroy() {
         assert4(this.ptr != null);
@@ -6121,7 +6121,7 @@ var require_client_h1 = __commonJS({
           socket[kBlocking] = false;
           client2[kResume]();
         }
-        return pause ? constants3.ERROR.PAUSED : 0;
+        return pause ? constants4.ERROR.PAUSED : 0;
       }
       onBody(buf) {
         const { client: client2, socket, statusCode, maxResponseSize } = this;
@@ -6143,7 +6143,7 @@ var require_client_h1 = __commonJS({
         }
         this.bytesRead += buf.length;
         if (request2.onData(buf) === false) {
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         }
       }
       onMessageComplete() {
@@ -6179,13 +6179,13 @@ var require_client_h1 = __commonJS({
         if (socket[kWriting]) {
           assert4(client2[kRunning] === 0);
           util3.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (!shouldKeepAlive) {
           util3.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (socket[kReset] && client2[kRunning] === 0) {
           util3.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (client2[kPipelining] == null || client2[kPipelining] === 1) {
           setImmediate(() => client2[kResume]());
         } else {
@@ -27606,7 +27606,7 @@ var require_async = __commonJS({
 // node_modules/graceful-fs/polyfills.js
 var require_polyfills = __commonJS({
   "node_modules/graceful-fs/polyfills.js"(exports2, module) {
-    var constants3 = __require("constants");
+    var constants4 = __require("constants");
     var origCwd = process.cwd;
     var cwd = null;
     var platform2 = process.env.GRACEFUL_FS_PLATFORM || process.platform;
@@ -27630,7 +27630,7 @@ var require_polyfills = __commonJS({
     var chdir;
     module.exports = patch;
     function patch(fs9) {
-      if (constants3.hasOwnProperty("O_SYMLINK") && process.version.match(/^v0\.6\.[0-2]|^v0\.5\./)) {
+      if (constants4.hasOwnProperty("O_SYMLINK") && process.version.match(/^v0\.6\.[0-2]|^v0\.5\./)) {
         patchLchmod(fs9);
       }
       if (!fs9.lutimes) {
@@ -27732,7 +27732,7 @@ var require_polyfills = __commonJS({
         fs10.lchmod = function(path14, mode, callback) {
           fs10.open(
             path14,
-            constants3.O_WRONLY | constants3.O_SYMLINK,
+            constants4.O_WRONLY | constants4.O_SYMLINK,
             mode,
             function(err, fd) {
               if (err) {
@@ -27748,7 +27748,7 @@ var require_polyfills = __commonJS({
           );
         };
         fs10.lchmodSync = function(path14, mode) {
-          var fd = fs10.openSync(path14, constants3.O_WRONLY | constants3.O_SYMLINK, mode);
+          var fd = fs10.openSync(path14, constants4.O_WRONLY | constants4.O_SYMLINK, mode);
           var threw = true;
           var ret;
           try {
@@ -27768,9 +27768,9 @@ var require_polyfills = __commonJS({
         };
       }
       function patchLutimes(fs10) {
-        if (constants3.hasOwnProperty("O_SYMLINK") && fs10.futimes) {
+        if (constants4.hasOwnProperty("O_SYMLINK") && fs10.futimes) {
           fs10.lutimes = function(path14, at, mt, cb) {
-            fs10.open(path14, constants3.O_SYMLINK, function(er, fd) {
+            fs10.open(path14, constants4.O_SYMLINK, function(er, fd) {
               if (er) {
                 if (cb) cb(er);
                 return;
@@ -27783,7 +27783,7 @@ var require_polyfills = __commonJS({
             });
           };
           fs10.lutimesSync = function(path14, at, mt) {
-            var fd = fs10.openSync(path14, constants3.O_SYMLINK);
+            var fd = fs10.openSync(path14, constants4.O_SYMLINK);
             var ret;
             var threw = true;
             try {
@@ -46652,14 +46652,14 @@ var require_zip_archive_entry = __commonJS({
     var ArchiveEntry = require_archive_entry();
     var GeneralPurposeBit = require_general_purpose_bit();
     var UnixStat = require_unix_stat();
-    var constants3 = require_constants6();
+    var constants4 = require_constants6();
     var zipUtil = require_util11();
     var ZipArchiveEntry = module.exports = function(name) {
       if (!(this instanceof ZipArchiveEntry)) {
         return new ZipArchiveEntry(name);
       }
       ArchiveEntry.call(this);
-      this.platform = constants3.PLATFORM_FAT;
+      this.platform = constants4.PLATFORM_FAT;
       this.method = -1;
       this.name = null;
       this.size = 0;
@@ -46667,7 +46667,7 @@ var require_zip_archive_entry = __commonJS({
       this.gpb = new GeneralPurposeBit();
       this.crc = 0;
       this.time = -1;
-      this.minver = constants3.MIN_VERSION_INITIAL;
+      this.minver = constants4.MIN_VERSION_INITIAL;
       this.mode = -1;
       this.extra = null;
       this.exattr = 0;
@@ -46694,7 +46694,7 @@ var require_zip_archive_entry = __commonJS({
       return this.exattr;
     };
     ZipArchiveEntry.prototype.getExtra = function() {
-      return this.extra !== null ? this.extra : constants3.EMPTY;
+      return this.extra !== null ? this.extra : constants4.EMPTY;
     };
     ZipArchiveEntry.prototype.getGeneralPurposeBit = function() {
       return this.gpb;
@@ -46727,7 +46727,7 @@ var require_zip_archive_entry = __commonJS({
       return this.time !== -1 ? this.time : 0;
     };
     ZipArchiveEntry.prototype.getUnixMode = function() {
-      return this.platform !== constants3.PLATFORM_UNIX ? 0 : this.getExternalAttributes() >> constants3.SHORT_SHIFT & constants3.SHORT_MASK;
+      return this.platform !== constants4.PLATFORM_UNIX ? 0 : this.getExternalAttributes() >> constants4.SHORT_SHIFT & constants4.SHORT_MASK;
     };
     ZipArchiveEntry.prototype.getVersionNeededToExtract = function() {
       return this.minver;
@@ -46797,12 +46797,12 @@ var require_zip_archive_entry = __commonJS({
       this.time = zipUtil.dateToDos(time, forceLocalTime);
     };
     ZipArchiveEntry.prototype.setUnixMode = function(mode) {
-      mode |= this.isDirectory() ? constants3.S_IFDIR : constants3.S_IFREG;
+      mode |= this.isDirectory() ? constants4.S_IFDIR : constants4.S_IFREG;
       var extattr = 0;
-      extattr |= mode << constants3.SHORT_SHIFT | (this.isDirectory() ? constants3.S_DOS_D : constants3.S_DOS_A);
+      extattr |= mode << constants4.SHORT_SHIFT | (this.isDirectory() ? constants4.S_DOS_D : constants4.S_DOS_A);
       this.setExternalAttributes(extattr);
-      this.mode = mode & constants3.MODE_MASK;
-      this.platform = constants3.PLATFORM_UNIX;
+      this.mode = mode & constants4.MODE_MASK;
+      this.platform = constants4.PLATFORM_UNIX;
     };
     ZipArchiveEntry.prototype.setVersionNeededToExtract = function(minver) {
       this.minver = minver;
@@ -46814,7 +46814,7 @@ var require_zip_archive_entry = __commonJS({
       return (this.getUnixMode() & UnixStat.FILE_TYPE_FLAG) === UnixStat.LINK_FLAG;
     };
     ZipArchiveEntry.prototype.isZip64 = function() {
-      return this.csize > constants3.ZIP64_MAGIC || this.size > constants3.ZIP64_MAGIC;
+      return this.csize > constants4.ZIP64_MAGIC || this.size > constants4.ZIP64_MAGIC;
     };
   }
 });
@@ -47131,7 +47131,7 @@ var require_zip_archive_output_stream = __commonJS({
     var ArchiveOutputStream = require_archive_output_stream();
     var ZipArchiveEntry = require_zip_archive_entry();
     var GeneralPurposeBit = require_general_purpose_bit();
-    var constants3 = require_constants6();
+    var constants4 = require_constants6();
     var util3 = require_util12();
     var zipUtil = require_util11();
     var ZipArchiveOutputStream = module.exports = function(options) {
@@ -47167,21 +47167,21 @@ var require_zip_archive_output_stream = __commonJS({
     };
     ZipArchiveOutputStream.prototype._appendBuffer = function(ae, source, callback) {
       if (source.length === 0) {
-        ae.setMethod(constants3.METHOD_STORED);
+        ae.setMethod(constants4.METHOD_STORED);
       }
       var method = ae.getMethod();
-      if (method === constants3.METHOD_STORED) {
+      if (method === constants4.METHOD_STORED) {
         ae.setSize(source.length);
         ae.setCompressedSize(source.length);
         ae.setCrc(crc32.buf(source) >>> 0);
       }
       this._writeLocalFileHeader(ae);
-      if (method === constants3.METHOD_STORED) {
+      if (method === constants4.METHOD_STORED) {
         this.write(source);
         this._afterAppend(ae);
         callback(null, ae);
         return;
-      } else if (method === constants3.METHOD_DEFLATED) {
+      } else if (method === constants4.METHOD_DEFLATED) {
         this._smartStream(ae, callback).end(source);
         return;
       } else {
@@ -47191,7 +47191,7 @@ var require_zip_archive_output_stream = __commonJS({
     };
     ZipArchiveOutputStream.prototype._appendStream = function(ae, source, callback) {
       ae.getGeneralPurposeBit().useDataDescriptor(true);
-      ae.setVersionNeededToExtract(constants3.MIN_VERSION_DATA_DESCRIPTOR);
+      ae.setVersionNeededToExtract(constants4.MIN_VERSION_DATA_DESCRIPTOR);
       this._writeLocalFileHeader(ae);
       var smart = this._smartStream(ae, callback);
       source.once("error", function(err) {
@@ -47208,7 +47208,7 @@ var require_zip_archive_output_stream = __commonJS({
         o.zlib = {};
       }
       if (typeof o.zlib.level !== "number") {
-        o.zlib.level = constants3.ZLIB_BEST_SPEED;
+        o.zlib.level = constants4.ZLIB_BEST_SPEED;
       }
       o.forceZip64 = !!o.forceZip64;
       o.forceLocalTime = !!o.forceLocalTime;
@@ -47231,11 +47231,11 @@ var require_zip_archive_output_stream = __commonJS({
     };
     ZipArchiveOutputStream.prototype._normalizeEntry = function(ae) {
       if (ae.getMethod() === -1) {
-        ae.setMethod(constants3.METHOD_DEFLATED);
+        ae.setMethod(constants4.METHOD_DEFLATED);
       }
-      if (ae.getMethod() === constants3.METHOD_DEFLATED) {
+      if (ae.getMethod() === constants4.METHOD_DEFLATED) {
         ae.getGeneralPurposeBit().useDataDescriptor(true);
-        ae.setVersionNeededToExtract(constants3.MIN_VERSION_DATA_DESCRIPTOR);
+        ae.setVersionNeededToExtract(constants4.MIN_VERSION_DATA_DESCRIPTOR);
       }
       if (ae.getTime() === -1) {
         ae.setTime(/* @__PURE__ */ new Date(), this._archive.forceLocalTime);
@@ -47247,7 +47247,7 @@ var require_zip_archive_output_stream = __commonJS({
       };
     };
     ZipArchiveOutputStream.prototype._smartStream = function(ae, callback) {
-      var deflate = ae.getMethod() === constants3.METHOD_DEFLATED;
+      var deflate = ae.getMethod() === constants4.METHOD_DEFLATED;
       var process5 = deflate ? new DeflateCRC32Stream(this.options.zlib) : new CRC32Stream();
       var error2 = null;
       function handleStuff() {
@@ -47270,13 +47270,13 @@ var require_zip_archive_output_stream = __commonJS({
       var size = this._archive.centralLength;
       var offset = this._archive.centralOffset;
       if (this.isZip64()) {
-        records = constants3.ZIP64_MAGIC_SHORT;
-        size = constants3.ZIP64_MAGIC;
-        offset = constants3.ZIP64_MAGIC;
+        records = constants4.ZIP64_MAGIC_SHORT;
+        size = constants4.ZIP64_MAGIC;
+        offset = constants4.ZIP64_MAGIC;
       }
-      this.write(zipUtil.getLongBytes(constants3.SIG_EOCD));
-      this.write(constants3.SHORT_ZERO);
-      this.write(constants3.SHORT_ZERO);
+      this.write(zipUtil.getLongBytes(constants4.SIG_EOCD));
+      this.write(constants4.SHORT_ZERO);
+      this.write(constants4.SHORT_ZERO);
       this.write(zipUtil.getShortBytes(records));
       this.write(zipUtil.getShortBytes(records));
       this.write(zipUtil.getLongBytes(size));
@@ -47287,18 +47287,18 @@ var require_zip_archive_output_stream = __commonJS({
       this.write(comment);
     };
     ZipArchiveOutputStream.prototype._writeCentralDirectoryZip64 = function() {
-      this.write(zipUtil.getLongBytes(constants3.SIG_ZIP64_EOCD));
+      this.write(zipUtil.getLongBytes(constants4.SIG_ZIP64_EOCD));
       this.write(zipUtil.getEightBytes(44));
-      this.write(zipUtil.getShortBytes(constants3.MIN_VERSION_ZIP64));
-      this.write(zipUtil.getShortBytes(constants3.MIN_VERSION_ZIP64));
-      this.write(constants3.LONG_ZERO);
-      this.write(constants3.LONG_ZERO);
+      this.write(zipUtil.getShortBytes(constants4.MIN_VERSION_ZIP64));
+      this.write(zipUtil.getShortBytes(constants4.MIN_VERSION_ZIP64));
+      this.write(constants4.LONG_ZERO);
+      this.write(constants4.LONG_ZERO);
       this.write(zipUtil.getEightBytes(this._entries.length));
       this.write(zipUtil.getEightBytes(this._entries.length));
       this.write(zipUtil.getEightBytes(this._archive.centralLength));
       this.write(zipUtil.getEightBytes(this._archive.centralOffset));
-      this.write(zipUtil.getLongBytes(constants3.SIG_ZIP64_EOCD_LOC));
-      this.write(constants3.LONG_ZERO);
+      this.write(zipUtil.getLongBytes(constants4.SIG_ZIP64_EOCD_LOC));
+      this.write(constants4.LONG_ZERO);
       this.write(zipUtil.getEightBytes(this._archive.centralOffset + this._archive.centralLength));
       this.write(zipUtil.getLongBytes(1));
     };
@@ -47308,13 +47308,13 @@ var require_zip_archive_output_stream = __commonJS({
       var fileOffset = ae._offsets.file;
       var size = ae.getSize();
       var compressedSize = ae.getCompressedSize();
-      if (ae.isZip64() || fileOffset > constants3.ZIP64_MAGIC) {
-        size = constants3.ZIP64_MAGIC;
-        compressedSize = constants3.ZIP64_MAGIC;
-        fileOffset = constants3.ZIP64_MAGIC;
-        ae.setVersionNeededToExtract(constants3.MIN_VERSION_ZIP64);
+      if (ae.isZip64() || fileOffset > constants4.ZIP64_MAGIC) {
+        size = constants4.ZIP64_MAGIC;
+        compressedSize = constants4.ZIP64_MAGIC;
+        fileOffset = constants4.ZIP64_MAGIC;
+        ae.setVersionNeededToExtract(constants4.MIN_VERSION_ZIP64);
         var extraBuf = Buffer.concat([
-          zipUtil.getShortBytes(constants3.ZIP64_EXTRA_ID),
+          zipUtil.getShortBytes(constants4.ZIP64_EXTRA_ID),
           zipUtil.getShortBytes(24),
           zipUtil.getEightBytes(ae.getSize()),
           zipUtil.getEightBytes(ae.getCompressedSize()),
@@ -47322,8 +47322,8 @@ var require_zip_archive_output_stream = __commonJS({
         ], 28);
         ae.setExtra(extraBuf);
       }
-      this.write(zipUtil.getLongBytes(constants3.SIG_CFH));
-      this.write(zipUtil.getShortBytes(ae.getPlatform() << 8 | constants3.VERSION_MADEBY));
+      this.write(zipUtil.getLongBytes(constants4.SIG_CFH));
+      this.write(zipUtil.getShortBytes(ae.getPlatform() << 8 | constants4.VERSION_MADEBY));
       this.write(zipUtil.getShortBytes(ae.getVersionNeededToExtract()));
       this.write(gpb.encode());
       this.write(zipUtil.getShortBytes(method));
@@ -47341,7 +47341,7 @@ var require_zip_archive_output_stream = __commonJS({
       this.write(zipUtil.getShortBytes(name.length));
       this.write(zipUtil.getShortBytes(extra.length));
       this.write(zipUtil.getShortBytes(comment.length));
-      this.write(constants3.SHORT_ZERO);
+      this.write(constants4.SHORT_ZERO);
       this.write(zipUtil.getShortBytes(ae.getInternalAttributes()));
       this.write(zipUtil.getLongBytes(ae.getExternalAttributes()));
       this.write(zipUtil.getLongBytes(fileOffset));
@@ -47350,7 +47350,7 @@ var require_zip_archive_output_stream = __commonJS({
       this.write(comment);
     };
     ZipArchiveOutputStream.prototype._writeDataDescriptor = function(ae) {
-      this.write(zipUtil.getLongBytes(constants3.SIG_DD));
+      this.write(zipUtil.getLongBytes(constants4.SIG_DD));
       this.write(zipUtil.getLongBytes(ae.getCrc()));
       if (ae.isZip64()) {
         this.write(zipUtil.getEightBytes(ae.getCompressedSize()));
@@ -47367,22 +47367,22 @@ var require_zip_archive_output_stream = __commonJS({
       var extra = ae.getLocalFileDataExtra();
       if (ae.isZip64()) {
         gpb.useDataDescriptor(true);
-        ae.setVersionNeededToExtract(constants3.MIN_VERSION_ZIP64);
+        ae.setVersionNeededToExtract(constants4.MIN_VERSION_ZIP64);
       }
       if (gpb.usesUTF8ForNames()) {
         name = Buffer.from(name);
       }
       ae._offsets.file = this.offset;
-      this.write(zipUtil.getLongBytes(constants3.SIG_LFH));
+      this.write(zipUtil.getLongBytes(constants4.SIG_LFH));
       this.write(zipUtil.getShortBytes(ae.getVersionNeededToExtract()));
       this.write(gpb.encode());
       this.write(zipUtil.getShortBytes(method));
       this.write(zipUtil.getLongBytes(ae.getTimeDos()));
       ae._offsets.data = this.offset;
       if (gpb.usesDataDescriptor()) {
-        this.write(constants3.LONG_ZERO);
-        this.write(constants3.LONG_ZERO);
-        this.write(constants3.LONG_ZERO);
+        this.write(constants4.LONG_ZERO);
+        this.write(constants4.LONG_ZERO);
+        this.write(constants4.LONG_ZERO);
       } else {
         this.write(zipUtil.getLongBytes(ae.getCrc()));
         this.write(zipUtil.getLongBytes(ae.getCompressedSize()));
@@ -47398,7 +47398,7 @@ var require_zip_archive_output_stream = __commonJS({
       return this._archive.comment !== null ? this._archive.comment : "";
     };
     ZipArchiveOutputStream.prototype.isZip64 = function() {
-      return this._archive.forceZip64 || this._entries.length > constants3.ZIP64_MAGIC_SHORT || this._archive.centralLength > constants3.ZIP64_MAGIC || this._archive.centralOffset > constants3.ZIP64_MAGIC;
+      return this._archive.forceZip64 || this._entries.length > constants4.ZIP64_MAGIC_SHORT || this._archive.centralLength > constants4.ZIP64_MAGIC || this._archive.centralOffset > constants4.ZIP64_MAGIC;
     };
     ZipArchiveOutputStream.prototype.setComment = function(comment) {
       this._archive.comment = comment;
@@ -49728,7 +49728,7 @@ var require_extract = __commonJS({
 // node_modules/tar-stream/constants.js
 var require_constants7 = __commonJS({
   "node_modules/tar-stream/constants.js"(exports2, module) {
-    var constants3 = {
+    var constants4 = {
       // just for envs without fs
       S_IFMT: 61440,
       S_IFDIR: 16384,
@@ -49738,9 +49738,9 @@ var require_constants7 = __commonJS({
       S_IFLNK: 40960
     };
     try {
-      module.exports = __require("fs").constants || constants3;
+      module.exports = __require("fs").constants || constants4;
     } catch {
-      module.exports = constants3;
+      module.exports = constants4;
     }
   }
 });
@@ -49750,7 +49750,7 @@ var require_pack = __commonJS({
   "node_modules/tar-stream/pack.js"(exports2, module) {
     var { Readable: Readable7, Writable, getStreamError } = require_streamx();
     var b4a = require_b4a();
-    var constants3 = require_constants7();
+    var constants4 = require_constants7();
     var headers = require_headers2();
     var DMODE = 493;
     var FMODE = 420;
@@ -49953,16 +49953,16 @@ var require_pack = __commonJS({
       return new Pack(opts);
     };
     function modeToType(mode) {
-      switch (mode & constants3.S_IFMT) {
-        case constants3.S_IFBLK:
+      switch (mode & constants4.S_IFMT) {
+        case constants4.S_IFBLK:
           return "block-device";
-        case constants3.S_IFCHR:
+        case constants4.S_IFCHR:
           return "character-device";
-        case constants3.S_IFDIR:
+        case constants4.S_IFDIR:
           return "directory";
-        case constants3.S_IFIFO:
+        case constants4.S_IFIFO:
           return "fifo";
-        case constants3.S_IFLNK:
+        case constants4.S_IFLNK:
           return "symlink";
       }
       return "file";
@@ -98620,7 +98620,8 @@ async function readMedia(root, file) {
 }
 
 // src/install.js
-import { chmod as chmod2, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
+import { access as access3, chmod as chmod2, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
+import { constants as constants3 } from "node:fs";
 import path5 from "node:path";
 
 // src/process.js
@@ -98673,7 +98674,24 @@ var CHECKSUMS = {
   "0.1.17-x86_64-unknown-linux-gnu": "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
   "0.1.17-aarch64-unknown-linux-gnu": "ced28786becb89606d2912be7a8894abc006535e3f18050e29bc20ea0c30cd52"
 };
-async function install(directory, version3, checksum, dependencies) {
+async function prepareBinary({ root, directory, binary, version: version3, checksum, dependencies }) {
+  const executable = binary ? await localBinary(root, binary) : await installRelease(directory, version3, checksum);
+  if (dependencies) await installDependencies(directory);
+  return executable;
+}
+async function localBinary(root, candidate) {
+  try {
+    const executable = await regularPath(root, candidate);
+    await access3(executable, constants3.X_OK);
+    return executable;
+  } catch (error2) {
+    throw new Error(
+      `Invalid binary input: provide an existing executable file inside working-directory, without symlinks (${error2.message})`,
+      { cause: error2 }
+    );
+  }
+}
+async function installRelease(directory, version3, checksum) {
   if (process.platform !== "linux" || !["x64", "arm64"].includes(process.arch)) {
     throw new Error("The action supports Ubuntu x64 and ARM64 runners");
   }
@@ -98696,32 +98714,33 @@ async function install(directory, version3, checksum, dependencies) {
   if (result.code !== 0) throw new Error("Could not extract verified Betamax archive");
   const binary = path5.join(directory, "betamax");
   await chmod2(binary, 493);
-  if (dependencies) {
-    for (const args of [
-      ["apt-get", "update", "-qq"],
-      [
-        "apt-get",
-        "install",
-        "-y",
-        "-qq",
-        "ffmpeg",
-        "fonts-dejavu-core",
-        "fonts-jetbrains-mono",
-        "fonts-noto-core",
-        "fonts-noto-cjk"
-      ]
-    ]) {
-      const setup = await execute("sudo", ["-n", ...args], {
-        timeout: 3e5,
-        log: path5.join(directory, "dependencies.log")
-      });
-      if (setup.code !== 0)
-        throw new Error(
-          "Dependency installation failed; install dependencies in an earlier step and set install-dependencies: false"
-        );
-    }
-  }
   return binary;
+}
+async function installDependencies(directory) {
+  await mkdir2(directory, { recursive: true });
+  for (const args of [
+    ["apt-get", "update", "-qq"],
+    [
+      "apt-get",
+      "install",
+      "-y",
+      "-qq",
+      "ffmpeg",
+      "fonts-dejavu-core",
+      "fonts-jetbrains-mono",
+      "fonts-noto-core",
+      "fonts-noto-cjk"
+    ]
+  ]) {
+    const setup = await execute("sudo", ["-n", ...args], {
+      timeout: 3e5,
+      log: path5.join(directory, "dependencies.log")
+    });
+    if (setup.code !== 0)
+      throw new Error(
+        "Dependency installation failed; install dependencies in an earlier step and set install-dependencies: false"
+      );
+  }
 }
 
 // node_modules/@actions/glob/lib/internal-globber.js
@@ -101499,15 +101518,20 @@ try {
   const formats = parseFormats(getInput("formats") || "gif,png");
   const timeout = integer(getInput("timeout-seconds") || "120", "timeout-seconds", 1, 1800) * 1e3;
   const retentionDays = integer(getInput("retention-days") || "14", "retention-days", 1, 90);
-  info("Installing a verified Betamax release and rendering terminal tapes");
+  const suppliedBinary = getInput("binary");
+  info(
+    suppliedBinary ? "Rendering tapes with the supplied Betamax executable" : "Installing a verified Betamax release and rendering terminal tapes"
+  );
   setOutput("output-directory", directory);
   try {
-    const binary = await install(
-      path13.join(directory, "bin"),
-      getInput("version") || "0.1.17",
-      getInput("sha256"),
-      getBooleanInput("install-dependencies")
-    );
+    const binary = await prepareBinary({
+      root,
+      directory: path13.join(directory, "bin"),
+      binary: suppliedBinary,
+      version: getInput("version") || "0.1.17",
+      checksum: getInput("sha256"),
+      dependencies: getBooleanInput("install-dependencies")
+    });
     const result = await render({
       root,
       directory,

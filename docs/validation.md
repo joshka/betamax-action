@@ -5,7 +5,7 @@ not make the native upload endpoint a supported GitHub REST API.
 
 ## Automated checks
 
-[CI](https://github.com/joshka/betamax-action/actions/runs/35418745529) passes 33 tests, JavaScript
+[CI](https://github.com/joshka/betamax-action/actions/runs/35419537502) passes 37 tests, JavaScript
 and Markdown linting, formatting, bundle comparison, Rust formatting and Clippy, dependency audit,
 and zizmor 1.30.1. Tests cover malformed action manifests, path containment, process timeouts,
 failed captures, API pagination, bot comment ownership, fork association, stale heads, run attempts,
@@ -35,6 +35,18 @@ The [0.1.17 integration run](https://github.com/joshka/betamax-action/actions/ru
 passes the same dimension and duration assertions with native MP4/WebM output. Its
 [reporter run](https://github.com/joshka/betamax-action/actions/runs/35418824523) also passes
 gallery and native-attachment publication.
+
+## Local executable selection
+
+The
+[local-binary job](https://github.com/joshka/betamax-action/actions/runs/35419537426/job/105834460682)
+invokes an executable inside the checkout and passes the same GIF/PNG dimension and duration checks.
+It deliberately supplies an invalid release version and checks an invocation marker, proving that
+`binary` is selected rather than a downloaded fallback. This fixture wraps a verified release;
+consumers build their own CLI as shown in the [local-binary example](local-binary.md).
+
+Tests also cover literal paths with spaces, path rejection before setup, ignored release settings,
+download bypass, explicit dependency setup and the checksum-verified release default on Linux.
 
 ## PR reporting
 
