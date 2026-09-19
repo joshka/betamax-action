@@ -12,10 +12,10 @@ comments. For complete workflows, follow the [setup guide](getting-started.md).
 | `formats`              | `gif,png`          | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`. |
 | `extra-outputs`        | Empty              | Globs for additional media, relative to the working directory.        |
 | `binary`               | Empty              | Local executable path; overrides release version and checksum.        |
-| `version`              | `0.1.17`           | Release version; ignored when `binary` is set.                        |
-| `sha256`               | Bundled for 0.1.17 | Release archive digest; ignored when `binary` is set.                 |
+| `version`              | `0.1.18`           | Release version; ignored when `binary` is set.                        |
+| `sha256`               | Bundled for 0.1.18 | Release archive digest; ignored when `binary` is set.                 |
 | `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
-| `timeout-seconds`      | `120`              | Time limit for each tape and each animation conversion; 1–1800.       |
+| `timeout-seconds`      | `120`              | Time limit for each tape; 1–1800.                                     |
 | `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |
 | `comment-key`          | `betamax`          | Shared identifier for rendering and reporting.                        |
 | `variant`              | `default`          | Unique matrix job identifier.                                         |
@@ -50,18 +50,26 @@ sorts and deduplicates matches. It excludes `.git`, `.jj`, `node_modules`, `targ
 `vendor` and `.artifacts` when finding tapes. Extra outputs can come from build directories. Paths
 outside the working directory and symbolic links are rejected.
 
-## Supported formats and conversion
+## Supported formats
 
-Betamax renders PNG, GIF, MP4 and WebM directly. MP4 and WebM use the captured frames and their hold
-times, with transitions rounded to the tape's output frame rate. They do not pass through GIF or
-inherit its palette limitations.
+Betamax 0.1.18 renders PNG, GIF, WebP, MP4 and WebM directly. MP4 and WebM use the captured frames
+and their hold times, with transitions rounded to the tape's output frame rate. They do not pass
+through GIF or inherit its palette limitations.
 
-WebP is converted from a GIF capture with ffmpeg because Betamax has no native WebP writer. It
-inherits GIF's color palette and uses 30 FPS, rounding frame delays to that cadence. JPEG is
-accepted through `extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are
-not accepted as media.
+Native WebP preserves captured colors and frame holds, including the final frame, without GIF's
+palette reduction or a second conversion at a fixed 30 FPS. A WebP-only request generates no GIF
+intermediate. JPEG is accepted through `extra-outputs`; it is not a generated preview format. SVG
+and arbitrary HTML are not accepted as media.
+
+Explicitly selected older releases and local binaries must support every requested output format.
+For WebP, use Betamax 0.1.18 or a compatible local build. Unsupported outputs fail the tape and keep
+its CLI diagnostics; the action does not retry with GIF conversion or another binary. Omit `webp`
+when intentionally exercising an older CLI. Missing requested files also fail collection, even if
+the CLI exits successfully.
 
 ## Fonts and dependencies
+
+Native WebP needs no external encoder. ffmpeg remains installed for MP4 and WebM output.
 
 The default font installation improves coverage, including CJK fallback, but does not guarantee
 identical rendering across runner images. Install your preferred fonts before the action and choose

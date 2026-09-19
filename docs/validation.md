@@ -5,7 +5,7 @@ not make the native upload endpoint a supported GitHub REST API.
 
 ## Automated checks
 
-[CI](https://github.com/joshka/betamax-action/actions/runs/35419537502) passes 37 tests, JavaScript
+[CI](https://github.com/joshka/betamax-action/actions/runs/35420275141) passes 40 tests, JavaScript
 and Markdown linting, formatting, bundle comparison, Rust formatting and Clippy, dependency audit,
 and zizmor 1.30.1. Tests cover malformed action manifests, path containment, process timeouts,
 failed captures, API pagination, bot comment ownership, fork association, stale heads, run attempts,
@@ -27,14 +27,45 @@ and both video formats decoded and reported approximately 2.53 seconds of playba
 remains in Actions artifacts, rather than in the source repository.
 
 These checks caught Betamax 0.1.15's direct video writer dropping frame delays. Betamax 0.1.17 fixes
-video timing upstream. The action now requests MP4/WebM directly and keeps GIF conversion only for
-WebP, which Betamax does not write natively. See the
-[format tradeoffs](reference.md#supported-formats-and-conversion).
+video timing upstream. Betamax 0.1.18 adds native WebP, removing the remaining GIF conversion. See
+the [format tradeoffs](reference.md#supported-formats).
 
 The [0.1.17 integration run](https://github.com/joshka/betamax-action/actions/runs/35418745511)
 passes the same dimension and duration assertions with native MP4/WebM output. Its
 [reporter run](https://github.com/joshka/betamax-action/actions/runs/35418824523) also passes
 gallery and native-attachment publication.
+
+## Native WebP
+
+The [0.1.18 integration run](https://github.com/joshka/betamax-action/actions/runs/35420275147)
+passes native GIF/PNG/WebP on x64 and ARM64, MP4/WebM on x64, and WebP-only rendering through the
+local-executable input. Each tape directory contains exactly the requested formats; the local job
+produces no GIF intermediate. Checkpoint collection also passes.
+
+Pillow independently decodes each WebP: five changing frames, 534 opaque colors, 780 × 350 pixels,
+and a final-frame hold of 1019–1020 ms. Total playback remains within 2.4–2.7 seconds. On both
+architectures, the final WebP frame matches the native PNG's opaque pixels exactly. These checks
+catch palette reduction, frozen animation, missing outputs and a dropped final hold.
+
+The [trusted reporter](https://github.com/joshka/betamax-action/actions/runs/35420338087) publishes
+four [gallery links](https://github.com/joshka/betamax-action/pull/5#issuecomment-5739231944) and
+all 13
+[native attachments](https://github.com/joshka/betamax-action/pull/5#issuecomment-5739233701),
+including the three native WebP captures, without upload fallbacks.
+
+The default selects
+[Betamax 0.1.18](https://github.com/joshka/betamax/releases/tag/betamax-v0.1.18). Both Linux
+archives were downloaded and hashed against GitHub's published release asset digests before changing
+the default:
+
+| Target                    | SHA-256                                                            |
+| ------------------------- | ------------------------------------------------------------------ |
+| x86_64-unknown-linux-gnu  | `c04bc6716963d7d5158fa0504049776bb0acab693335fbfbd9e393b87a297143` |
+| aarch64-unknown-linux-gnu | `beb6abcd40a400fbad14b8ee418efa790710ce7fdc4093614044d009669e7f56` |
+
+Tests cover unsupported and silently missing native WebP output. Older explicitly selected binaries
+receive the requested output unchanged and fail visibly; see the
+[format policy](reference.md#supported-formats).
 
 ## Local executable selection
 
@@ -79,5 +110,4 @@ restricted to the upload step.
 
 - Native JPEG uploads and private-repository attachment access have not been exercised live.
 - Fork association is covered with mocked API responses, but not a live external contributor PR.
-- ARM64 animation conversion beyond GIF has not been exercised in the live matrix.
 - Other applications and fonts need their own tape assertions and visual review.
