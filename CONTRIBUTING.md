@@ -1,5 +1,8 @@
 # Develop and test
 
+For architecture, artifact compatibility, change procedures and debugging, read the
+[maintainer guide](docs/development.md). This page is the local setup and checks entry point.
+
 Use Node.js 24 or newer and Rust stable. The action uses JavaScript for the Actions runtime and a
 Rust Ratatui app as its integration fixture. Betamax itself is downloaded as a verified binary.
 
@@ -12,10 +15,13 @@ npm run build
 node scripts/check-dist.mjs
 cargo fmt --manifest-path examples/ratatui/Cargo.toml --check
 cargo clippy --locked --manifest-path examples/ratatui/Cargo.toml -- -D warnings
-markdownlint-cli2
-zizmor --no-progress .
+npm run lint:md
+uvx zizmor==1.30.1 --no-progress .
 actionlint -ignore 'specifying action "\$/" in invalid format'
 ```
+
+Install `uv` and `actionlint` separately for the workflow checks above. CI pins Rust 1.98.1 and
+Node.js 24; use those versions when reproducing a CI-only failure.
 
 Actionlint 1.7.12 does not recognize GitHub's new `$/` self-repository action syntax. The command
 above excludes that one diagnostic; zizmor 1.30.1 and live CI validate the reference.
@@ -29,29 +35,14 @@ The Markdown linter pins a vulnerable TOML parser transitively. The package over
 
 ## Test layers
 
-Unit and integration tests cover tape discovery, paths, subprocess timeouts, HTML escaping, media
-signatures, byte limits, API pagination, bot comment ownership, fork association, stale heads, run
-attempts and credential routing. Tests use temporary files and injected HTTP responses.
+Use the [test-layer comparison](docs/development.md#choose-the-right-test) to choose between local
+behavioral tests, real rendering and trusted reporter acceptance. Local tests need no PAT. Native
+upload acceptance uses a separate, maintainer-configured environment secret and reviewed reporter
+code; a PR cannot safely test arbitrary publisher code with write credentials.
 
-The Betamax workflow builds the Ratatui fixture and renders GIF/PNG/WebP and MP4/WebM in separate
-matrix jobs. It uploads actual media and galleries. A local-executable variant uses an invocation
-marker and an invalid release version to prove that `binary` runs and bypasses release selection. A
-report workflow pinned to a reviewed commit on the default branch exercises PR comment creation and
-updates.
-
-For a live reporter change, first test source behavior locally. Publish a reviewed action commit,
-then update the default-branch reporter pin to that commit. A PR cannot safely test arbitrary new
-publisher code with write credentials. Keep render changes in the unprivileged PR workflow.
-
-Scenario-named media require a reporter pin that understands the new naming contract. Until that
-reviewed pin reaches the default branch, the existing reporter ignores named media and its native
-upload acceptance check can fail with no attachments. Validate parsing/captions locally with mocked
-APIs and rendering in unprivileged CI; do not bypass the trusted-pin boundary to make that check
-pass. After the approved reporter rollout, rerun rendering to validate native titles with live
-uploads.
-
-Do not add a PAT just to run the test suite. Native upload acceptance is a separate test requiring a
-maintainer-configured secret. Record what was tested in [validation notes](docs/validation.md).
+Read [artifact compatibility](docs/development.md#change-the-artifact-contract) before changing
+names or adding formats. Deploy a compatible reporter before a renderer that requires it. Record
+live results and remaining gaps in [validation notes](docs/validation.md).
 
 ## Documentation
 
