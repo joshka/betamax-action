@@ -43,6 +43,13 @@ For a live reporter change, first test source behavior locally. Publish a review
 then update the default-branch reporter pin to that commit. A PR cannot safely test arbitrary new
 publisher code with write credentials. Keep render changes in the unprivileged PR workflow.
 
+Scenario-named media require a reporter pin that understands the new naming contract. Until that
+reviewed pin reaches the default branch, the existing reporter ignores named media and its native
+upload acceptance check can fail with no attachments. Validate parsing/captions locally with mocked
+APIs and rendering in unprivileged CI; do not bypass the trusted-pin boundary to make that check
+pass. After the approved reporter rollout, rerun rendering to validate native titles with live
+uploads.
+
 Do not add a PAT just to run the test suite. Native upload acceptance is a separate test requiring a
 maintainer-configured secret. Record what was tested in [validation notes](docs/validation.md).
 

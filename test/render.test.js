@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, symlink, rm, realpath } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { discover, parseFormats, render, galleryHtml } from "../src/render.js";
+import { discover, parseFormats, render, galleryHtml, scenarioSlug } from "../src/render.js";
 import { mediaType, regularPath } from "../src/common.js";
 import { execute } from "../src/process.js";
+import { selectArtifacts } from "../src/report.js";
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), "betamax-test-"));
@@ -206,3 +207,54 @@ if (${JSON.stringify(behavior)} === 'native') {
     }
   });
 }
+
+test("scenario slugs use bounded basenames, normalize text and never carry markup", () => {
+  assert.equal(scenarioSlug("examples/features/input-and-keys.tape"), "input-and-keys");
+  assert.equal(scenarioSlug(".artifacts/Caption Étude.PNG"), "caption-etude");
+  assert.equal(scenarioSlug("tapes/<script>[Click](https:evil).tape"), "script-click-https-evil");
+  assert.equal(scenarioSlug("tapes/日本語.tape"), "scenario");
+  assert.equal(scenarioSlug(`tapes/${"a".repeat(59)} b.tape`), "a".repeat(59));
+  assert.equal(scenarioSlug(`tapes/${"a".repeat(100)}.tape`), "a".repeat(60));
+});
+
+test("colliding scenario slugs keep every tape, format and extra output distinct", async (t) => {
+  const root = await fixture(t);
+  await mkdir(path.join(root, "nested"));
+  for (const tape of ["Input & keys.tape", "input-keys.tape", "nested/input-keys.tape"])
+    await writeFile(path.join(root, tape), "Sleep 1s");
+  await writeFile(path.join(root, "input-keys.gif"), "GIF89aextra");
+  const binary = path.join(root, "fake-betamax");
+  await writeFile(
+    binary,
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+for (const line of fs.readFileSync(0, 'utf8').split('\\n').filter(line => line.startsWith('Output '))) {
+  const file = JSON.parse(line.slice(7));
+  fs.writeFileSync(file, file.endsWith('.gif') ? 'GIF89atest' : 'RIFF1234WEBPtest');
+}
+`,
+    { mode: 0o755 },
+  );
+  const result = await render({
+    root,
+    directory: path.join(root, "out"),
+    binary,
+    patterns: "**/*.tape",
+    formats: ["gif", "webp"],
+    timeout: 5000,
+    extraOutputs: "input-keys.gif",
+    prefix: "betamax-test-default-r1",
+  });
+  assert.deepEqual(result.problems, []);
+  assert.equal(result.media.length, 7);
+  assert.equal(new Set(result.media.map((item) => item.name)).size, 7);
+  const selected = selectArtifacts(result.media, "test", 1);
+  assert.equal(selected.length, 7);
+  assert.ok(selected.every((item) => item.title === "Input keys"));
+  for (const [index, item] of result.media.entries()) {
+    assert.match(item.name, new RegExp(`-m${index + 1}\\.input-keys\\.(gif|webp)$`));
+    assert.deepEqual(await readFile(item.path), item.bytes);
+  }
+  assert.match(await readFile(result.gallery, "utf8"), /nested\/input-keys\.tape/);
+  assert.match(await readFile(result.gallery, "utf8"), /Input &amp; keys/);
+});

@@ -106,6 +106,17 @@ The repository's reporting workflow rejects comments containing upload fallbacks
 so a successful artifact-link fallback cannot hide a failed native upload test. The PAT remains
 restricted to the upload step.
 
+## Scenario-name validation
+
+Tests cover named and legacy artifacts in the same run, variant/attempt selection, title rendering,
+malformed names, basename collisions, multiple formats and extra outputs. Scenario strings cannot be
+parsed as selection metadata, authorize a different PR, inject Markdown, or bypass media limits.
+Gallery mode continues to perform zero downloads.
+
+Live named native captions require the [trusted reporter rollout](reference.md#scenario-names).
+Rendering can be validated on the PR, but publisher code must first be reviewed and pinned on the
+trusted default branch before exercising it with credentials.
+
 ## Remaining acceptance checks
 
 - Native JPEG uploads and private-repository attachment access have not been exercised live.
