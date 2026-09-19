@@ -26,9 +26,10 @@ Downloaded galleries were also inspected in a browser: images decoded at the exp
 and both video formats decoded and reported approximately 2.53 seconds of playback. Generated media
 remains in Actions artifacts, rather than in the source repository.
 
-These checks caught Betamax 0.1.15's direct video writer dropping frame delays. The action now
-converts animations from GIF at 30 FPS, including the last frame's hold. PNG remains a direct
-capture. See the [format tradeoffs](reference.md#supported-formats-and-conversion).
+These checks caught Betamax 0.1.15's direct video writer dropping frame delays. Betamax 0.1.17 fixes
+video timing upstream. The action now requests MP4/WebM directly and keeps GIF conversion only for
+WebP, which Betamax does not write natively. See the
+[format tradeoffs](reference.md#supported-formats-and-conversion).
 
 ## PR reporting
 

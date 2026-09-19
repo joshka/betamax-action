@@ -32,7 +32,7 @@ try {
   try {
     const binary = await install(
       path.join(directory, "bin"),
-      core.getInput("version") || "0.1.15",
+      core.getInput("version") || "0.1.17",
       core.getInput("sha256"),
       core.getBooleanInput("install-dependencies"),
     );

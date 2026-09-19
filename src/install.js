@@ -4,10 +4,10 @@ import { digest } from "./common.js";
 import { execute } from "./process.js";
 
 const CHECKSUMS = {
-  "0.1.15-x86_64-unknown-linux-gnu":
-    "e91f61d5da5835ce1520e9a9d6b5096a5b913ad5b33f7d552ebe54a13b214e3c",
-  "0.1.15-aarch64-unknown-linux-gnu":
-    "3c1f5e3fa7a05f0fbd5e8a7cb65361e15ee44576e40f106ba92b0d00b75bcc44",
+  "0.1.17-x86_64-unknown-linux-gnu":
+    "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
+  "0.1.17-aarch64-unknown-linux-gnu":
+    "ced28786becb89606d2912be7a8894abc006535e3f18050e29bc20ea0c30cd52",
 };
 
 export async function install(directory, version, checksum, dependencies) {
@@ -15,7 +15,7 @@ export async function install(directory, version, checksum, dependencies) {
     throw new Error("The action supports Ubuntu x64 and ARM64 runners");
   }
   if (!/^\d+\.\d+\.\d+$/.test(version))
-    throw new Error("version must be an exact release such as 0.1.15");
+    throw new Error("version must be an exact release such as 0.1.17");
   const target = `${process.arch === "x64" ? "x86_64" : "aarch64"}-unknown-linux-gnu`;
   const expected = checksum || CHECKSUMS[`${version}-${target}`];
   if (!/^[a-f0-9]{64}$/.test(expected ?? ""))

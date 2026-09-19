@@ -27,8 +27,8 @@ example, save this as `demos/preview.tape`, replacing the executable and `Ready`
 application's command and expected output. The render workflow below must build that executable
 first.
 
-The action sets `BETAMAX_WORKING_DIRECTORY` to the selected working directory. Betamax 0.1.15 starts
-its shell in the user's home directory, so change directory in the tape before running relative
+The action sets `BETAMAX_WORKING_DIRECTORY` to the selected working directory. Betamax starts its
+shell in the user's home directory, so change directory in the tape before running relative
 commands:
 
 ```text

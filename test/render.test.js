@@ -119,3 +119,39 @@ test("an empty tape selection fails visibly", async (t) => {
     /No tapes/,
   );
 });
+
+test("video-only rendering requests native outputs without a GIF intermediate", async (t) => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, "video.tape"), "Sleep 1s");
+  const binary = path.join(root, "fake-betamax");
+  await writeFile(
+    binary,
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+const tape = fs.readFileSync(0, 'utf8');
+const outputs = tape.split('\\n').filter(line => line.startsWith('Output '));
+if (outputs.length !== 2 || tape.includes('.gif')) process.exit(1);
+for (const line of outputs) {
+  const file = JSON.parse(line.slice(7));
+  const bytes = file.endsWith('.mp4')
+    ? Buffer.from('00000018667479706d703432', 'hex')
+    : Buffer.from('1a45dfa300000000', 'hex');
+  fs.writeFileSync(file, bytes);
+}
+`,
+    { mode: 0o755 },
+  );
+  const result = await render({
+    root,
+    directory: path.join(root, "out"),
+    binary,
+    patterns: "*.tape",
+    formats: ["mp4", "webm"],
+    timeout: 5000,
+    extraOutputs: "",
+    prefix: "betamax-test-video-r1",
+  });
+  assert.deepEqual(result.problems, []);
+  assert.equal(result.media.length, 2);
+  assert.equal(result.results[0].status, "passed");
+});
