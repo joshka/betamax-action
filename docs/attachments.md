@@ -17,8 +17,18 @@ for uploads. Leave the comment API token at its default, `${{ github.token }}`.
    permission. This configuration passed the live test in `joshka/betamax-action`; it is not a
    proven minimum. Organization policies may impose additional approval requirements. The endpoint
    is not a stable, separately documented REST API.
-1. Save it as an Actions secret named `BETAMAX_ATTACHMENT_TOKEN`, preferably in an environment with
-   required reviewers. Set that environment on the report job if used.
+1. Create a dedicated environment named `betamax-attachments`. Under **Deployment branches and
+   tags**, select **Selected branches and tags**, then add a **Branch** rule for your exact trusted
+   default branch (`main` in this repository). Do not add wildcard or tag rules. Selecting
+   **Protected branches only** is not equivalent to restricting access to the default branch.
+1. Save the token only as an environment secret named `BETAMAX_ATTACHMENT_TOKEN`. Set
+   `environment: betamax-attachments` on the trusted `workflow_run` report job. Keep that workflow
+   on the default branch and pin the reporter to a reviewed commit. Required reviewers are an
+   optional additional gate before publishing untrusted media.
+1. If migrating a repository secret, enter its value directly in GitHub's environment settings;
+   GitHub cannot reveal the existing value. Verify the environment secret exists, then remove the
+   repository copy. A same-named environment secret overrides a repository secret, so a successful
+   upload alone does not prove the repository copy is gone. Never put the token in chat or logs.
 1. Add these inputs to the report step on the default branch:
 
    ```yaml
@@ -31,6 +41,21 @@ for uploads. Leave the comment API token at its default, `${{ github.token }}`.
 Keep `token` at its default. The Actions bot owns and updates the comment; the user token is sent
 only to GitHub's native upload endpoint. Never provide this secret to the render job or a
 `pull_request_target` workflow that executes PR code.
+
+## Verify isolation
+
+In this repository, `.github/workflows/betamax-report.yml` uses `betamax-attachments` and checks
+`github.ref == 'refs/heads/main'`. The environment must independently allow only the `main` branch:
+workflow conditions alone cannot protect a repository-level secret from a modified PR workflow.
+GitHub runs `workflow_run` using default-branch workflow configuration. The environment restriction
+is not a workflow allowlist; trusted default-branch workflows and administrators remain trusted.
+
+After merging the workflow change and confirming the environment secret exists, remove the
+repository-level copy before running the live check. Rerun the render workflow for a current PR head
+and check that **Betamax report** creates native attachment URLs without upload warnings. Confirm
+the comment author is `github-actions[bot]`. The render and build jobs must have no environment or
+user secrets, read-only permissions, and checkout `persist-credentials: false`. Never reuse a token
+scoped to another repository.
 
 ## Compare both modes on one PR
 
@@ -107,5 +132,6 @@ API. Test your own account and repository configuration before relying on it.
 
 - [GitHub CLI uploader](https://github.com/cli/cli/blob/v2.101.0/internal/attachments/client.go)
 - [GitHub CLI token rejection tests](https://github.com/cli/cli/blob/v2.101.0/internal/attachments/client_test.go)
+- [Environment branch restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 - [GITHUB_TOKEN identity](https://docs.github.com/en/actions/concepts/security/github_token)
 - [GitHub attachment access and limits](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)

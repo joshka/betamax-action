@@ -7,10 +7,11 @@ values, signed artifact URLs, or exploit payloads in public issues.
 
 ## Execution boundary
 
-A tape is executable code. Run it on an ephemeral GitHub-hosted runner using the `pull_request`
-event, `contents: read`, no secrets, and checkout with `persist-credentials: false`. Do not run
-untrusted tapes on a persistent self-hosted runner. The rendering action rejects `workflow_run` and
-`pull_request_target` events.
+PR-controlled tapes, action code, build scripts and local executables are executable code. Even a
+released Betamax binary does not make the rendering runner trusted. Run it on an ephemeral
+GitHub-hosted runner using the `pull_request` event, `contents: read`, no secrets, and checkout with
+`persist-credentials: false`. Do not run untrusted tapes on a persistent self-hosted runner. The
+rendering action rejects `workflow_run` and `pull_request_target` events.
 
 The reporter runs separately on `workflow_run` with `actions: read` and `pull-requests: write`. Its
 action code must be pinned to a reviewed commit. It must never check out PR code, restore a PR
@@ -44,10 +45,19 @@ only to `uploads.github.com`; comment API calls continue to use the Actions toke
 follows artifact redirects only to approved GitHub/Azure storage hosts, without forwarding a token,
 and rejects further redirects. It verifies the artifact digest, enforces byte limits and checks
 media signatures. It never extracts archives. These checks constrain the upload path; they do not
-establish that attacker-controlled media is harmless to every downstream decoder.
+establish that attacker-controlled media is harmless to every downstream decoder. The digest proves
+that bytes match the uploaded artifact, not that their producer is trustworthy. Signature checks
+inspect magic bytes, not complete media structure; they do not decode, sanitize, or rule out
+polyglots, malformed payloads, or decoder vulnerabilities. Validation performed on the render runner
+can be forged by PR code and is not a security boundary.
 
-Use an environment approval gate if your repository requires review before media from a fork is
-published with a user credential. See [native attachment setup](docs/attachments.md).
+Store the repository-scoped attachment PAT only in a dedicated environment restricted explicitly to
+the trusted default branch, with no wildcard or tag rules. Remove any repository-level copy after
+confirming the environment secret exists. Only the pinned reporter on a fresh runner receives it;
+comments continue to use `GITHUB_TOKEN`. Environment restrictions do not isolate workflows from
+other trusted default-branch workflows or repository administrators. Add required reviewers if your
+repository requires approval before publishing fork media. See
+[native attachment setup](docs/attachments.md).
 
 ## Dependency and release policy
 
