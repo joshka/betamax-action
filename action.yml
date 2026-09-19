@@ -1,0 +1,50 @@
+name: Betamax
+description: Render terminal tapes into a review gallery and downloadable media
+author: Josh McKinney
+branding:
+  icon: film
+  color: purple
+inputs:
+  tapes:
+    description: Newline-separated tape globs, relative to working-directory
+    default: "**/*.tape"
+  working-directory:
+    description: Directory in the checkout used for commands and relative tape paths
+    default: "."
+  formats:
+    description: Comma-separated preview formats (gif, png, webp, mp4, webm)
+    default: gif,png
+  extra-outputs:
+    description: Newline-separated globs for additional PNG, GIF, WebP, JPEG, MP4 or WebM files
+  version:
+    description: Exact Betamax CLI version
+    default: "0.1.15"
+  sha256:
+    description: Required archive checksum for versions without a bundled checksum
+  install-dependencies:
+    description: Install ffmpeg, DejaVu, JetBrains Mono and Noto fonts on Ubuntu
+    default: "true"
+  timeout-seconds:
+    description: Maximum execution time per tape
+    default: "120"
+  retention-days:
+    description: Artifact retention, subject to repository limits
+    default: "14"
+  comment-key:
+    description: Identifier shared with the report action
+    default: betamax
+  variant:
+    description: Unique identifier for this matrix job
+    default: default
+outputs:
+  artifact-url:
+    description: Link to the HTML gallery artifact
+  artifact-id:
+    description: HTML gallery artifact ID
+  tapes-passed:
+    description: Number of successful tapes
+  tapes-failed:
+    description: Number of failed tapes
+runs:
+  using: node24
+  main: dist/render/index.js

@@ -1,0 +1,32 @@
+{
+  "name": "betamax-action",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Render Betamax tapes and update pull request galleries",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:md": "markdownlint-cli2"
+  },
+  "dependencies": {
+    "@actions/artifact": "6.2.1",
+    "@actions/core": "3.0.1",
+    "@actions/glob": "0.7.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "markdownlint-cli2": "0.23.2",
+    "prettier": "3.9.8"
+  },
+  "overrides": {
+    "markdownlint-cli2": {
+      "smol-toml": "1.8.0"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+# Action reference
+
+## Rendering inputs
+
+| Input                  | Default            | Behavior                                                              |
+| ---------------------- | ------------------ | --------------------------------------------------------------------- |
+| `tapes`                | `**/*.tape`        | Newline-separated paths or globs; `!` excludes matches.               |
+| `working-directory`    | `.`                | Directory inside the checkout for CLI execution and relative paths.   |
+| `formats`              | `gif,png`          | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`. |
+| `extra-outputs`        | Empty              | Globs for additional media, relative to the working directory.        |
+| `version`              | `0.1.15`           | Exact Betamax CLI version.                                            |
+| `sha256`               | Bundled for 0.1.15 | Archive digest; required for other versions.                          |
+| `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
+| `timeout-seconds`      | `120`              | Time limit for each tape and each WebP conversion; 1–1800.            |
+| `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |
+| `comment-key`          | `betamax`          | Shared identifier for rendering and reporting.                        |
+| `variant`              | `default`          | Unique matrix job identifier.                                         |
+
+Identifiers contain 1–40 lowercase letters, digits or hyphens and begin with a letter or digit.
+Discovery sorts and deduplicates matches. It excludes `.git`, `.jj`, `node_modules`, `target`,
+`dist`, `vendor` and `.artifacts` when finding tapes. Extra outputs can come from build directories.
+Paths outside the working directory and symbolic links are rejected.
+
+PNG and GIF are rendered by Betamax. MP4 and WebM use ffmpeg through Betamax. WebP is converted from
+a GIF capture with ffmpeg's animated WebP encoder. JPEG is accepted through `extra-outputs`; it is
+not a generated preview format. SVG and arbitrary HTML are not accepted as media.
+
+The default font installation improves coverage, including CJK fallback, but does not guarantee
+identical rendering across runner images. Install your preferred fonts before the action and choose
+`Set FontFamily` in the tape. Set `install-dependencies: false` when you manage ffmpeg and fonts
+elsewhere. The action does not persist an installation cache. Application caches belong in earlier
+consumer workflow steps and must never be restored by the privileged reporter.
+
+## Rendering outputs and failures
+
+| Output         | Meaning                                   |
+| -------------- | ----------------------------------------- |
+| `artifact-url` | HTML gallery artifact link.               |
+| `artifact-id`  | Numeric gallery artifact ID.              |
+| `tapes-passed` | Number of tapes that exited successfully. |
+| `tapes-failed` | Number of tapes that failed or timed out. |
+
+The action runs remaining tapes after an execution failure, uploads available evidence, then fails
+the step. Setup and discovery failures stop rendering. The job's timeout is the final limit if a
+process cannot be stopped or a runner is cancelled. Keep `timeout-minutes` in the consumer job.
+
+A successful capture proves the tape completed. It does not prove that every rendered pixel is
+correct. Final animations may be missing after a timeout; checkpoint screenshots can still be
+collected with `extra-outputs`.
+
+Limits per rendering job: 20 tapes, 20 media files, 10 MiB per file and 40 MiB of media in total.
+Use a matrix or fewer formats for larger suites. Logs retain at most 1 MiB per process and are
+stored as artifacts rather than printed as workflow commands.
+
+Each run uploads an unzipped HTML gallery, individual unzipped media files, and a ZIP of
+diagnostics. The gallery embeds media as data URLs and needs no external scripts or media server.
+GitHub artifact access still requires sign-in and expires under the repository's retention policy.
+
+## Reporting inputs
+
+| Input              | Default               | Behavior                                                             |
+| ------------------ | --------------------- | -------------------------------------------------------------------- |
+| `workflow`         | Required              | Source workflow filename, for example `betamax.yml`.                 |
+| `comment-key`      | `betamax`             | Matches the rendering action's identifier.                           |
+| `mode`             | `artifacts`           | `artifacts` links galleries; `attachments` adds native inline media. |
+| `token`            | `${{ github.token }}` | Built-in token with Actions read and PR write permissions.           |
+| `attachment-token` | Empty                 | User token for native uploads only.                                  |
+
+The reporter outputs `comment-url` when it creates or updates a comment. It requires the
+`workflow_run` event on GitHub.com and the built-in Actions bot identity for comment ownership. Use
+separate comment keys for separate source workflows. Share a key among matrix jobs in one workflow,
+not among independent workflows.
+
+Native mode permits at most 20 media files and 40 MiB across the selected matrix variants. A
+repeated notification for an already published run attempt does not upload again. A new rendering
+attempt creates new attachments. Partial native upload failures leave gallery/artifact links in the
+comment and warnings in the reporter log. Rerun the rendering workflow to retry those uploads.

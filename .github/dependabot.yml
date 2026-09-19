@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      dependencies:
+        patterns: ["*"]
+  - package-ecosystem: cargo
+    directory: /examples/ratatui
+    schedule:
+      interval: monthly
+    versioning-strategy: lockfile-only
+    cooldown:
+      default-days: 7
+    groups:
+      demo:
+        patterns: ["*"]

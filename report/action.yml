@@ -1,0 +1,23 @@
+name: Betamax PR report
+description: Update one pull request comment with terminal galleries or native media
+inputs:
+  token:
+    description: Token with actions read and pull-requests write permissions
+    default: ${{ github.token }}
+  workflow:
+    description: Expected source workflow filename, such as betamax.yml
+    required: true
+  comment-key:
+    description: Identifier shared with the render action
+    default: betamax
+  mode:
+    description: artifacts for gallery links, or attachments for inline media
+    default: artifacts
+  attachment-token:
+    description: Optional user token used only for native media uploads
+outputs:
+  comment-url:
+    description: Updated pull request comment URL
+runs:
+  using: node24
+  main: ../dist/report/index.js
