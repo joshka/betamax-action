@@ -1,5 +1,5 @@
 name: Betamax report
-# Metadata-only by default. Never check out PR code or restore its caches here.
+# Never check out PR code or restore its caches in either reporting mode.
 on: # zizmor: ignore[dangerous-triggers]
   workflow_run:
     workflows: [Betamax]
@@ -19,6 +19,30 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@0bc254d5ae6e0db21c8254c4230f270bffcd61a2 # initial implementation
+      - name: Gallery links
+        uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b # independent report comments
         with:
           workflow: betamax.yml
+      - name: Native attachments
+        id: native
+        uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b # independent report comments
+        with:
+          workflow: betamax.yml
+          comment-key: betamax-native
+          artifact-key: betamax
+          mode: attachments
+          attachment-token: ${{ secrets.BETAMAX_ATTACHMENT_TOKEN }}
+      - name: Verify native uploads succeeded
+        if: steps.native.outputs.comment-url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMENT_URL: ${{ steps.native.outputs.comment-url }}
+        run: |
+          comment_id="${COMMENT_URL##*#issuecomment-}"
+          gh api "repos/$REPOSITORY/issues/comments/$comment_id" --jq '.body' > "$RUNNER_TEMP/native-comment.md"
+          rg -q 'https://github.com/user-attachments/assets/' "$RUNNER_TEMP/native-comment.md"
+          if rg -q 'could not be attached' "$RUNNER_TEMP/native-comment.md"; then
+            echo 'Some native uploads failed; inspect the reporter warnings.'
+            exit 1
+          fi
