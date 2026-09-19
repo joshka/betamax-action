@@ -205,7 +205,7 @@ To change the default Betamax release:
    unverified formats/platforms from verified ones rather than carrying forward old evidence.
 
 ```sh
-rg -n '0\.1\.19|CHECKSUMS|version:' action.yml src scripts test docs .github
+rg -n '0\.1\.20|CHECKSUMS|version:' action.yml src scripts test docs .github
 ```
 
 A supplied local executable deliberately bypasses release digests. Do not describe its path checks
