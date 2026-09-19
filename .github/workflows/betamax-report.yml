@@ -21,12 +21,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Gallery links
-        uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b # independent report comments
+        uses: joshka/betamax-action/report@6e0e39c50a53113c6d4ff529157364ae460bbd0d # scenario-aware captions
         with:
           workflow: betamax.yml
       - name: Native attachments
         id: native
-        uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b # independent report comments
+        uses: joshka/betamax-action/report@6e0e39c50a53113c6d4ff529157364ae460bbd0d # scenario-aware captions
         with:
           workflow: betamax.yml
           comment-key: betamax-native
