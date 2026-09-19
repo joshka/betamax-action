@@ -135,3 +135,5 @@ API. Test your own account and repository configuration before relying on it.
 - [Environment branch restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 - [GITHUB_TOKEN identity](https://docs.github.com/en/actions/concepts/security/github_token)
 - [GitHub attachment access and limits](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)
+
+<!-- Temporary smoke test for environment-isolated native uploads; do not merge. -->
