@@ -26,7 +26,7 @@ if (expected) {
   }
 }
 const files = (await readdir(directory)).filter((name) =>
-  /-m\d+\.(gif|png|webp|mp4|webm)$/.test(name),
+  /-m\d+\.[a-z0-9][a-z0-9-]{0,59}\.(gif|png|webp|mp4|webm)$/.test(name),
 );
 assert.ok(files.length > 0, "No preview files were generated");
 for (const file of files) {

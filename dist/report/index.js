@@ -19619,19 +19619,21 @@ async function boundedBody(response, limit) {
 function selectArtifacts(artifacts, key, attempt) {
   identifier(key, "comment-key");
   const pattern = new RegExp(
-    `^betamax-${key}-([a-z0-9][a-z0-9-]{0,39})-r([0-9]+)(?:\\.html|-m([0-9]+)\\.(png|gif|webp|jpg|jpeg|mp4|webm))$`
+    `^betamax-${key}-([a-z0-9][a-z0-9-]{0,39})-r([0-9]+)(?:\\.html|-m([0-9]+)(?:\\.([a-z0-9][a-z0-9-]{0,59}))?\\.(png|gif|webp|jpg|jpeg|mp4|webm))$`
   );
   const variants = /* @__PURE__ */ new Map();
   for (const artifact of artifacts) {
     const match = artifact.name.match(pattern);
-    if (!match || Number(match[2]) > attempt) continue;
-    const [, variant, recordedAttempt, index, extension] = match;
+    if (!match || match[0] !== artifact.name || Number(match[2]) > attempt) continue;
+    const [, variant, recordedAttempt, index, slug, extension] = match;
+    if (slug && (slug.endsWith("-") || slug.includes("--"))) continue;
     const item = {
       ...artifact,
       variant,
       attempt: Number(recordedAttempt),
       index: Number(index || 0),
-      extension
+      extension,
+      title: slug ? slug[0].toUpperCase() + slug.slice(1).replaceAll("-", " ") : void 0
     };
     const current = variants.get(variant);
     if (!current || current.attempt < item.attempt)
@@ -19738,20 +19740,22 @@ async function commentBody({ api, run, selected, key, mode, attachmentToken, war
       );
     }
     for (const item of files) {
+      const title = item.title || `preview ${item.index}`;
+      const alt = item.title ? `${title} (${item.variant})` : `${item.variant} terminal ${title}`;
       try {
         const media = await api.downloadMedia(item, item.extension);
         const url = await api.attach(item, media, run.repository.id, attachmentToken);
         body.push(
           "",
-          `**${item.variant} \xB7 preview ${item.index} \xB7 ${item.extension} \xB7 attempt ${item.attempt}**`,
+          `**${item.variant} \xB7 ${title} \xB7 ${item.extension} \xB7 attempt ${item.attempt}**`,
           "",
-          media.type.startsWith("video/") ? url : `![${item.variant} terminal preview ${item.index}](${url})`
+          media.type.startsWith("video/") ? url : `![${alt}](${url})`
         );
       } catch (error2) {
         warn(error2.message);
         body.push(
           "",
-          `Preview ${item.index} (${item.variant}) could not be attached. [Open the artifact](${runUrl}/artifacts/${item.id}).`
+          `${item.title || `Preview ${item.index}`} (${item.variant}) could not be attached. [Open the artifact](${runUrl}/artifacts/${item.id}).`
         );
       }
     }

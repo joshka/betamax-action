@@ -101340,6 +101340,10 @@ async function discover(root, patterns, excludeBuild = true) {
   }
   return [...new Set(files)].sort();
 }
+function scenarioSlug(identity) {
+  const stem = path11.basename(identity, path11.extname(identity));
+  return stem.normalize("NFKD").replace(new RegExp("\\p{Mark}", "gu"), "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "") || "scenario";
+}
 function parseFormats(input) {
   const formats = [...new Set(input.split(",").map((value) => value.trim()))];
   if (!formats.length || formats.some((value) => !["gif", "png", "webp", "mp4", "webm"].includes(value))) {
@@ -101366,7 +101370,7 @@ async function render({
   const media = [];
   const problems = [];
   let totalBytes = 0;
-  const collect = async (base, file, label) => {
+  const collect = async (base, file, label, identity) => {
     try {
       const item = await readMedia(base, file);
       if (media.length >= MAX_MEDIA || totalBytes + item.bytes.length > MAX_TOTAL_BYTES) {
@@ -101374,7 +101378,7 @@ async function render({
           "Gallery limit exceeded (20 files / 40 MiB total); narrow formats or extra-outputs"
         );
       }
-      const name = `${prefix2}-m${media.length + 1}.${item.extension}`;
+      const name = `${prefix2}-m${media.length + 1}.${scenarioSlug(identity)}.${item.extension}`;
       const destination = path11.join(directory, name);
       await writeFile3(destination, item.bytes);
       media.push({ name, path: destination, label, type: item.type, bytes: item.bytes });
@@ -101418,13 +101422,14 @@ ${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}
           problems.push(`${label}: requested ${format} preview was not produced`);
         continue;
       }
-      await collect(tapeDir, file, `${label} (${format})`);
+      await collect(tapeDir, file, `${label} (${format})`, label);
     }
   }
   const extras = await discover(root, extraOutputs, false);
   if (extraOutputs.trim() && !extras.length) problems.push("No files matched extra-outputs");
   for (const file of extras) {
-    await collect(root, file, path11.relative(root, file));
+    const identity = path11.relative(root, file);
+    await collect(root, file, identity, identity);
   }
   const manifest = {
     schema: 1,

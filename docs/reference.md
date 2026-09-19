@@ -110,6 +110,36 @@ Each rendering run uploads an unzipped HTML gallery, individual unzipped media f
 diagnostics. The gallery embeds media as data URLs and needs no external scripts or media server.
 GitHub artifact access still requires sign-in and expires under the repository's retention policy.
 
+## Scenario names
+
+Name tapes after the behavior they demonstrate: `examples/features/input-and-keys.tape` appears as
+**Input and keys** in native captions and image alt text. Additional outputs use their filename
+stem, so `.artifacts/scrollback-checkpoint.png` becomes **Scrollback checkpoint**. Gallery captions
+retain the full relative path for provenance. Descriptions belong in your docs or tape comments.
+
+Media artifact names use `betamax-<key>-<variant>-r<attempt>-m<index>.<scenario-slug>.<extension>`.
+The slug uses the basename without its final extension: Unicode NFKD normalization, removal of
+combining marks, lowercase ASCII letters/digits, and hyphens for all other runs. Leading/trailing
+hyphens are removed; the first 60 characters are retained with trailing hyphens removed again. An
+empty result becomes `scenario`. Native titles replace hyphens with spaces and capitalize the first
+letter.
+
+The media index stays unique within each variant/attempt, even when filenames normalize or truncate
+to the same slug or one tape produces several formats. Use distinct descriptive basenames when you
+want distinct captions. Slugs are untrusted display data, not scenario IDs or evidence of trust. Dot
+separators prevent slug text from changing the parsed variant, attempt, index or media type. Gallery
+artifact names are unchanged.
+
+The reporter also accepts legacy `-m<index>.<extension>` media names and keeps their numbered
+captions. Attempt selection, byte verification and size limits apply equally to both forms. Gallery
+mode still reads only artifact metadata; neither mode downloads a manifest to obtain titles.
+
+Upgrade the trusted reporter pin to a reviewed commit supporting scenario names **before** adopting
+this render naming contract. Older reporter pins ignore named media; gallery links still work.
+Deploy reporter updates through the trusted default branch and retain the protected attachment
+environment, token boundaries and separate PR rendering workflow. A PR must not run its unreviewed
+reporter code with write credentials or a PAT.
+
 ## Reporting inputs
 
 | Input              | Default               | Behavior                                                             |

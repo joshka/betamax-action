@@ -336,3 +336,138 @@ test("two report modes update separate comments from the same artifacts", async 
   assert.match(state.writes[1].body.body, /user-attachments/);
   assert.equal(state.attachments, 1);
 });
+
+test("named and legacy artifacts share variant attempt selection and media ordering", () => {
+  const names = [
+    "betamax-betamax-linux-r1-m1.old-scene.gif",
+    "betamax-betamax-linux-r2.html",
+    "betamax-betamax-linux-r2-m2.input-and-keys.webp",
+    "betamax-betamax-linux-r2-m1.gif",
+    "betamax-betamax-arm-r1-m1.captions-and-overlays.png",
+    "betamax-betamax-linux-r3-m1.future.png",
+  ];
+  const selected = selectArtifacts(
+    names.map((name, id) => ({ name, id })),
+    "betamax",
+    2,
+  );
+  assert.deepEqual(
+    selected.map((item) => item.name),
+    [names[4], names[1], names[3], names[2]],
+  );
+  assert.equal(selected[0].title, "Captions and overlays");
+  assert.equal(selected[2].title, undefined);
+  assert.equal(selected[3].title, "Input and keys");
+});
+
+test("malformed scenario names are rejected before display or download", async () => {
+  const { state, options } = scenario();
+  const invalid = [
+    "",
+    "-start",
+    "end-",
+    "two--words",
+    "UPPER",
+    "a_b",
+    "a/b",
+    "é",
+    "a".repeat(61),
+    "[click](https://evil)",
+    "<script>",
+    "a\n",
+    "a.html",
+    "a<!-- betamax-run:999 attempt:9 -->",
+  ];
+  state.artifacts.push(
+    ...invalid.map((slug, id) => ({
+      id: id + 20,
+      name: `betamax-betamax-linux-r2-m1.${slug}.gif`,
+      size_in_bytes: 6,
+    })),
+  );
+  await report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" });
+  assert.equal(state.downloads, 0);
+  assert.equal(state.attachments, 0);
+  assert.doesNotMatch(state.writes[0].body.body, /<script>|evil|UPPER/);
+  assert.equal(
+    selectArtifacts([{ name: `betamax-betamax-linux-r2-m1.${"a".repeat(60)}.gif` }], "betamax", 2)
+      .length,
+    1,
+  );
+});
+
+test("scenario titles appear in native captions, alt text and upload failure links", async () => {
+  const { state, options } = scenario();
+  state.artifacts.push({
+    id: 11,
+    name: "betamax-betamax-linux-r2-m1.input-and-keys.gif",
+    size_in_bytes: 6,
+  });
+  await report(options);
+  assert.equal(state.downloads, 0);
+  assert.doesNotMatch(state.writes[0].body.body, /Input and keys/);
+  await report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" });
+  assert.match(state.writes[1].body.body, /\*\*linux · Input and keys · gif · attempt 2\*\*/);
+  assert.match(state.writes[1].body.body, /!\[Input and keys \(linux\)\]/);
+  options.api.attach = async () => {
+    throw new Error("upload failed");
+  };
+  await report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" });
+  assert.match(state.writes[2].body.body, /Input and keys \(linux\) could not be attached/);
+});
+
+test("named media retains byte/count limits and cannot authorize a different PR", async () => {
+  for (const size of [6, 40 * 1024 * 1024 + 1]) {
+    const { state, options } = scenario();
+    state.artifacts.push(
+      ...Array.from({ length: size === 6 ? 21 : 1 }, (_, index) => ({
+        id: 20 + index,
+        name: `betamax-betamax-linux-r2-m${index + 1}.input-and-keys.gif`,
+        size_in_bytes: size,
+      })),
+    );
+    await assert.rejects(
+      report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" }),
+      /exceeds/,
+    );
+    assert.equal(state.downloads, 0);
+  }
+  const { state, options } = scenario();
+  state.artifacts.push({
+    id: 11,
+    name: "betamax-betamax-linux-r2-m1.trusted-main.gif",
+    size_in_bytes: 6,
+  });
+  state.pr.head.sha = "b".repeat(40);
+  await report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" });
+  assert.equal(state.downloads, 0);
+  assert.equal(state.writes.length, 0);
+});
+
+test("scenario words cannot become variant or attempt metadata", () => {
+  const artifact = { name: "betamax-betamax-linux-r2-m1.input-r9-m8.png", id: 10 };
+  const [item] = selectArtifacts([artifact], "betamax", 2);
+  assert.equal(item.variant, "linux");
+  assert.equal(item.attempt, 2);
+  assert.equal(item.index, 1);
+  assert.equal(item.title, "Input r9 m8");
+  for (const suffix of ["\n", "\r", "\r\n", ".html"])
+    assert.deepEqual(
+      selectArtifacts([{ ...artifact, name: artifact.name + suffix }], "betamax", 2),
+      [],
+    );
+});
+
+test("named videos use scenario captions and preserve native video links", async () => {
+  const { state, options } = scenario();
+  state.artifacts.push({
+    id: 11,
+    name: "betamax-betamax-linux-r2-m1.captions-and-overlays.mp4",
+    size_in_bytes: 6,
+  });
+  options.api.downloadMedia = async () => ({ type: "video/mp4", bytes: Buffer.alloc(6) });
+  await report({ ...options, mode: "attachments", attachmentToken: "github_pat_example" });
+  assert.match(state.writes[0].body.body, /linux · Captions and overlays · mp4 · attempt 2/);
+  assert.match(state.writes[0].body.body, /\nhttps:\/\/github.com\/user-attachments\/assets\//);
+  assert.doesNotMatch(state.writes[0].body.body, /!\[/);
+});
