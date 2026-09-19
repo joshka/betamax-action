@@ -18,7 +18,7 @@ inputs:
     description: Newline-separated globs for additional PNG, GIF, WebP, JPEG, MP4 or WebM files
   version:
     description: Exact Betamax CLI version
-    default: "0.1.15"
+    default: "0.1.17"
   sha256:
     description: Required archive checksum for versions without a bundled checksum
   install-dependencies:

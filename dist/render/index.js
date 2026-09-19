@@ -98670,15 +98670,15 @@ function execute(program, args, { cwd, input, log: log2, timeout = 12e4, env = p
 
 // src/install.js
 var CHECKSUMS = {
-  "0.1.15-x86_64-unknown-linux-gnu": "e91f61d5da5835ce1520e9a9d6b5096a5b913ad5b33f7d552ebe54a13b214e3c",
-  "0.1.15-aarch64-unknown-linux-gnu": "3c1f5e3fa7a05f0fbd5e8a7cb65361e15ee44576e40f106ba92b0d00b75bcc44"
+  "0.1.17-x86_64-unknown-linux-gnu": "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
+  "0.1.17-aarch64-unknown-linux-gnu": "ced28786becb89606d2912be7a8894abc006535e3f18050e29bc20ea0c30cd52"
 };
 async function install(directory, version3, checksum, dependencies) {
   if (process.platform !== "linux" || !["x64", "arm64"].includes(process.arch)) {
     throw new Error("The action supports Ubuntu x64 and ARM64 runners");
   }
   if (!/^\d+\.\d+\.\d+$/.test(version3))
-    throw new Error("version must be an exact release such as 0.1.15");
+    throw new Error("version must be an exact release such as 0.1.17");
   const target = `${process.arch === "x64" ? "x86_64" : "aarch64"}-unknown-linux-gnu`;
   const expected = checksum || CHECKSUMS[`${version3}-${target}`];
   if (!/^[a-f0-9]{64}$/.test(expected ?? ""))
@@ -101295,28 +101295,7 @@ import path12 from "node:path";
 
 // src/encode.js
 import path11 from "node:path";
-async function encodeAnimation(format, directory, log2, timeout) {
-  const codecs = {
-    webp: ["-loop", "0", "-c:v", "libwebp_anim", "-vf", "fps=30"],
-    mp4: [
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-vf",
-      "fps=30,pad=ceil(iw/2)*2:ceil(ih/2)*2",
-      "-movflags",
-      "+faststart"
-    ],
-    webm: [
-      "-c:v",
-      "libvpx-vp9",
-      "-pix_fmt",
-      "yuv420p",
-      "-vf",
-      "fps=30,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-    ]
-  };
+async function encodeWebp(directory, log2, timeout) {
   const result = await execute(
     "ffmpeg",
     [
@@ -101325,15 +101304,20 @@ async function encodeAnimation(format, directory, log2, timeout) {
       "error",
       "-i",
       path11.join(directory, "preview.gif"),
+      "-loop",
+      "0",
+      "-c:v",
+      "libwebp_anim",
+      "-vf",
+      "fps=30",
       "-fps_mode",
       "cfr",
-      ...codecs[format],
-      path11.join(directory, `preview.${format}`)
+      path11.join(directory, "preview.webp")
     ],
     { timeout, log: log2 }
   );
   if (result.code !== 0)
-    throw new Error(`${format} conversion failed; check ffmpeg and the conversion log`);
+    throw new Error("webp conversion failed; check ffmpeg and the conversion log");
 }
 
 // src/render.js
@@ -101412,7 +101396,7 @@ async function render({
     const tapeDir = path12.join(directory, `tape-${index + 1}`);
     await mkdir3(tapeDir);
     if ((await lstat3(tape)).size > 1024 * 1024) throw new Error("Tape exceeds the 1 MiB limit");
-    const requested = [...new Set(formats.map((format) => format === "png" ? "png" : "gif"))];
+    const requested = [...new Set(formats.map((format) => format === "webp" ? "gif" : format))];
     const outputs = requested.map((format) => path12.join(tapeDir, `preview.${format}`));
     const source = await readFile2(tape, "utf8");
     const augmented = `${source}
@@ -101433,18 +101417,11 @@ ${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}
     }
     const status = outcome.timedOut ? "timed out" : outcome.code === 0 ? "passed" : "failed";
     results.push({ tape: label, status });
-    if (outcome.code === 0) {
-      for (const format of formats.filter((value) => !["gif", "png"].includes(value))) {
-        try {
-          await encodeAnimation(
-            format,
-            tapeDir,
-            path12.join(directory, `${format}-${index + 1}.log`),
-            timeout
-          );
-        } catch (error2) {
-          problems.push(`${label}: ${error2.message}`);
-        }
+    if (outcome.code === 0 && formats.includes("webp")) {
+      try {
+        await encodeWebp(tapeDir, path12.join(directory, `webp-${index + 1}.log`), timeout);
+      } catch (error2) {
+        problems.push(`${label}: ${error2.message}`);
       }
     }
     for (const format of formats) {
@@ -101527,7 +101504,7 @@ try {
   try {
     const binary = await install(
       path13.join(directory, "bin"),
-      getInput("version") || "0.1.15",
+      getInput("version") || "0.1.17",
       getInput("sha256"),
       getBooleanInput("install-dependencies")
     );

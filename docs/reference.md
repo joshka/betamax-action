@@ -11,8 +11,8 @@ comments. For complete workflows, follow the [setup guide](getting-started.md).
 | `working-directory`    | `.`                | Directory inside the checkout for CLI execution and relative paths.   |
 | `formats`              | `gif,png`          | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`. |
 | `extra-outputs`        | Empty              | Globs for additional media, relative to the working directory.        |
-| `version`              | `0.1.15`           | Exact Betamax CLI version.                                            |
-| `sha256`               | Bundled for 0.1.15 | Archive digest; required for other versions.                          |
+| `version`              | `0.1.17`           | Exact Betamax CLI version.                                            |
+| `sha256`               | Bundled for 0.1.17 | Archive digest; required for other versions.                          |
 | `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
 | `timeout-seconds`      | `120`              | Time limit for each tape and each animation conversion; 1–1800.       |
 | `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |
@@ -31,12 +31,14 @@ outside the working directory and symbolic links are rejected.
 
 ## Supported formats and conversion
 
-PNG and GIF are rendered by Betamax. WebP, MP4 and WebM are converted from the GIF capture with
-ffmpeg, preserving its frame delays. This avoids a timing bug in Betamax 0.1.15's direct video
-writer. Converted animation inherits GIF's color palette; PNG retains the original raster colors.
-Converted animation is encoded at 30 FPS, rounding frame delays to that cadence. JPEG is accepted
-through `extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are not
-accepted as media.
+Betamax renders PNG, GIF, MP4 and WebM directly. MP4 and WebM use the captured frames and their hold
+times, with transitions rounded to the tape's output frame rate. They do not pass through GIF or
+inherit its palette limitations.
+
+WebP is converted from a GIF capture with ffmpeg because Betamax has no native WebP writer. It
+inherits GIF's color palette and uses 30 FPS, rounding frame delays to that cadence. JPEG is
+accepted through `extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are
+not accepted as media.
 
 ## Fonts and dependencies
 

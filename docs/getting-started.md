@@ -27,8 +27,8 @@ example, save this as `demos/preview.tape`, replacing the executable and `Ready`
 application's command and expected output. The render workflow below must build that executable
 first.
 
-The action sets `BETAMAX_WORKING_DIRECTORY` to the selected working directory. Betamax 0.1.15 starts
-its shell in the user's home directory, so change directory in the tape before running relative
+The action sets `BETAMAX_WORKING_DIRECTORY` to the selected working directory. Betamax starts its
+shell in the user's home directory, so change directory in the tape before running relative
 commands:
 
 ```text
@@ -71,7 +71,7 @@ jobs:
         with:
           persist-credentials: false
       # Install your application's toolchain and build it here.
-      - uses: joshka/betamax-action@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+      - uses: joshka/betamax-action@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
         with:
           tapes: demos/**/*.tape
           formats: gif,png,webp
@@ -110,7 +110,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+      - uses: joshka/betamax-action/report@176d2fa74fe3247bdb4dddf834a5f519ecf28c9b
         with:
           workflow: betamax.yml
 ```
