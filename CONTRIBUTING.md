@@ -1,51 +1,58 @@
-# Develop and test
+# Contributing
 
-For architecture, artifact compatibility, change procedures and debugging, read the
-[maintainer guide](docs/development.md). This page is the local setup and checks entry point.
+Use Node.js 24 or newer. The integration fixture also needs Rust; CI pins Rust 1.98.1 and
+Node.js 24. The [maintainer guide](docs/development.md) describes the architecture and integration
+tests.
 
-Use Node.js 24 or newer and Rust stable. The action uses JavaScript for the Actions runtime and a
-Rust Ratatui app as its integration fixture. Betamax itself is downloaded as a verified binary.
+## Install and check
 
 ```sh
 npm ci --ignore-scripts
 npm test
 npm run lint
 npm run format:check
-npm run build
-node scripts/check-dist.mjs
+npm run lint:md
+```
+
+Local tests need no GitHub token. The release-installer test runs only on Linux.
+
+After changing the Ratatui fixture, also run:
+
+```sh
 cargo fmt --manifest-path examples/ratatui/Cargo.toml --check
 cargo clippy --locked --manifest-path examples/ratatui/Cargo.toml -- -D warnings
-npm run lint:md
+```
+
+For workflow changes, install `uv` and `actionlint`, then run:
+
+```sh
 uvx zizmor==1.30.1 --no-progress .
 actionlint -ignore 'specifying action "\$/" in invalid format'
 ```
 
-Install `uv` and `actionlint` separately for the workflow checks above. CI pins Rust 1.98.1 and
-Node.js 24; use those versions when reproducing a CI-only failure.
+Actionlint 1.7.12 does not recognize GitHub's `$/` self-repository action syntax. The command
+suppresses that diagnostic; zizmor 1.30.1 and live CI check the reference.
 
-Actionlint 1.7.12 does not recognize GitHub's new `$/` self-repository action syntax. The command
-above excludes that one diagnostic; zizmor 1.30.1 and live CI validate the reference.
+## Rebuild runtime changes
 
-Commit `dist/` and dependency lockfiles with source changes. Consumers execute the checked-in
-bundle; they do not install npm dependencies. CI compares a fresh bundle with the committed files.
-Legal notices for bundled dependencies are next to each entry point.
+Consumers execute the committed `dist/` bundles without installing npm dependencies. After changing
+runtime JavaScript or dependencies, rebuild and include the bundles, adjacent legal notices and
+changed lockfiles:
 
-The Markdown linter pins a vulnerable TOML parser transitively. The package override selects
-`smol-toml` 1.8.0 until the linter updates its dependency. `npm audit` checks all dependencies.
+```sh
+npm run build
+node scripts/check-dist.mjs
+```
 
-## Test layers
+Never edit bundles directly. `check-dist.mjs` rebuilds and compares bytes. Run it before an
+intentional build to detect stale committed files; after a build, it checks reproducibility.
 
-Use the [test-layer comparison](docs/development.md#choose-the-right-test) to choose between local
-behavioral tests, real rendering and trusted reporter acceptance. Local tests need no PAT. Native
-upload acceptance uses a separate, maintainer-configured environment secret and reviewed reporter
-code; a PR cannot safely test arbitrary publisher code with write credentials.
+## Choose integration checks
 
-Read [artifact compatibility](docs/development.md#change-the-artifact-contract) before changing
-names or adding formats. Deploy a compatible reporter before a renderer that requires it. Record
-live results and remaining gaps in [validation notes](docs/validation.md).
+Changes to formats, installation or artifact uploads need
+[live rendering tests](docs/development.md#testing). Reporter changes need local tests first, then
+review and deployment before testing with write credentials. Keep those credentials out of PR jobs.
 
-## Documentation
-
-Keep setup instructions, input reference, security guidance and validation evidence separate. These
-pages are plain Markdown so they can later move into the Betamax website. Describe implemented
-behavior, include working examples, and update the reference when inputs or failure behavior change.
+Update the README when inputs, outputs or user-visible behavior change. Run Markdown lint and
+formatting checks for documentation edits. Record version-specific results and run links in the PR
+or release record, including checks you could not run.
