@@ -37,6 +37,8 @@ inputs:
     description: Unique identifier for this matrix job
     default: default
 outputs:
+  output-directory:
+    description: Local directory containing generated media and diagnostics
   artifact-url:
     description: Link to the HTML gallery artifact
   artifact-id:

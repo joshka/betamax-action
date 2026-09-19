@@ -24,6 +24,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run format:check
+      - run: npm run lint
       - run: npm run lint:md
       - run: node scripts/check-dist.mjs
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master

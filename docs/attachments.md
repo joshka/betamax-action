@@ -11,9 +11,9 @@ OAuth tokens, classic PATs and fine-grained PATs, and rejects GitHub App tokens.
 
 1. Create a dedicated user token restricted to the target repository. The account must have write
    access to that repository. For a fine-grained PAT, begin with repository Contents write
-   permission and confirm upload access with your organization's token policy. The upload endpoint
-   is not a stable, separately documented REST API; its exact minimum permissions need verification
-   in your repository.
+   permission. This configuration passed the live test in `joshka/betamax-action`; it is not a
+   proven minimum. Organization policies may impose additional approval requirements. The upload
+   endpoint is not a stable, separately documented REST API.
 1. Save it as an Actions secret named `BETAMAX_ATTACHMENT_TOKEN`, preferably in an environment with
    required reviewers. Set that environment on the report job if used.
 1. Add these inputs to the report step on the default branch:
@@ -28,6 +28,34 @@ OAuth tokens, classic PATs and fine-grained PATs, and rejects GitHub App tokens.
 Keep `token` at its default. The Actions bot owns and updates the comment; the user token is sent
 only to GitHub's native upload endpoint. Never provide this secret to the render job or a
 `pull_request_target` workflow that executes PR code.
+
+## Compare both modes on one PR
+
+Use two report steps to keep a gallery-link comment and a native-attachment comment. Both read the
+same rendered artifacts. `comment-key` identifies the comment; `artifact-key` selects the render
+job's `comment-key` and defaults to the report's own key when omitted.
+
+```yaml
+steps:
+  - name: Gallery links
+    uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+    with:
+      workflow: betamax.yml
+      comment-key: betamax
+  - name: Native attachments
+    uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
+    with:
+      workflow: betamax.yml
+      comment-key: betamax-native
+      artifact-key: betamax
+      mode: attachments
+      attachment-token: ${{ secrets.BETAMAX_ATTACHMENT_TOKEN }}
+```
+
+The pinned commit supports `artifact-key`. Keep both steps in one trusted report job with the
+permissions and concurrency group from the [setup guide](getting-started.md#update-the-pr-comment).
+Do not rerun the application or give the render job a PAT. Each reporter updates only its own bot
+comment, including on later commits and partial reruns.
 
 ## Upload behavior
 
@@ -46,9 +74,11 @@ internal repositories require repository access. Unlike Actions artifacts, these
 to the workflow artifact retention period. The action does not delete old attachments when it
 updates a comment.
 
-This mode needs a live test with your configured secret before relying on it. Automated tests cover
-credential routing, digest validation, size limits, media filtering and comment updates. They cannot
-prove that GitHub will accept a particular account's token.
+A fine-grained PAT limited to this repository with Contents read/write successfully uploaded GIF,
+PNG, WebP, MP4 and WebM in the [live test](validation.md#native-attachments). GitHub rendered the
+images and video inline in a separate comment. Test your own account and repository configuration
+before relying on it; the result does not establish minimum permissions or private-repository
+behavior.
 
 ## Sources
 

@@ -28,15 +28,15 @@ try {
     integer(core.getInput("timeout-seconds") || "120", "timeout-seconds", 1, 1800) * 1000;
   const retentionDays = integer(core.getInput("retention-days") || "14", "retention-days", 1, 90);
   core.info("Installing a verified Betamax release and rendering terminal tapes");
-  const binary = await install(
-    path.join(directory, "bin"),
-    core.getInput("version") || "0.1.15",
-    core.getInput("sha256"),
-    core.getBooleanInput("install-dependencies"),
-  );
-  let result;
+  core.setOutput("output-directory", directory);
   try {
-    result = await render({
+    const binary = await install(
+      path.join(directory, "bin"),
+      core.getInput("version") || "0.1.15",
+      core.getInput("sha256"),
+      core.getBooleanInput("install-dependencies"),
+    );
+    const result = await render({
       root,
       directory,
       binary,
@@ -75,13 +75,27 @@ try {
     if (passed !== result.results.length || result.problems.length)
       core.setFailed("Some tapes or media outputs failed. Open the gallery and diagnostics.");
   } finally {
-    const logs = (await readdir(directory))
-      .filter((name) => name.endsWith(".log") || name === "manifest.json")
-      .map((name) => path.join(directory, name));
-    if (logs.length) {
-      await new DefaultArtifactClient().uploadArtifact(`${prefix}-diagnostics`, logs, directory, {
-        retentionDays,
-      });
+    try {
+      const logs = (await readdir(directory))
+        .filter((name) => name.endsWith(".log") || name === "manifest.json")
+        .map((name) => path.join(directory, name));
+      try {
+        const setupLogs = await readdir(path.join(directory, "bin"));
+        logs.push(
+          ...setupLogs
+            .filter((name) => name.endsWith(".log"))
+            .map((name) => path.join(directory, "bin", name)),
+        );
+      } catch (error) {
+        if (error.code !== "ENOENT") core.warning(`Could not collect setup logs: ${error.message}`);
+      }
+      if (logs.length) {
+        await new DefaultArtifactClient().uploadArtifact(`${prefix}-diagnostics`, logs, directory, {
+          retentionDays,
+        });
+      }
+    } catch (error) {
+      core.warning(`Could not upload diagnostics: ${error.message}`);
     }
   }
 } catch (error) {

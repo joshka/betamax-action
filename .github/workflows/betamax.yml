@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   render:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -19,9 +19,14 @@ jobs:
       matrix:
         include:
           - variant: images
+            os: ubuntu-24.04
             formats: gif,png,webp
           - variant: video
+            os: ubuntu-24.04
             formats: mp4,webm
+          - variant: arm
+            os: ubuntu-24.04-arm
+            formats: gif,png
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,9 +38,14 @@ jobs:
       - name: Build the demo
         run: cargo build --locked --manifest-path examples/ratatui/Cargo.toml
       - name: Render terminal previews
+        id: previews
         uses: $/
         with:
           tapes: examples/tapes/*.tape
           formats: ${{ matrix.formats }}
           variant: ${{ matrix.variant }}
           extra-outputs: .artifacts/demo-checkpoint.png
+      - name: Verify media dimensions and playback timing
+        env:
+          BETAMAX_OUTPUT_DIRECTORY: ${{ steps.previews.outputs.output-directory }}
+        run: node scripts/verify-media.mjs

@@ -22,6 +22,7 @@ try {
     event,
     workflow: core.getInput("workflow", { required: true }),
     key: core.getInput("comment-key") || "betamax",
+    artifactKey: core.getInput("artifact-key") || undefined,
     mode: core.getInput("mode") || "artifacts",
     attachmentToken,
     warn: core.warning,

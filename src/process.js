@@ -31,7 +31,9 @@ export function execute(
       timedOut = true;
       try {
         process.kill(-child.pid, "SIGKILL");
-      } catch {}
+      } catch {
+        // The process may have exited before the timeout signal arrived.
+      }
     }, timeout);
     child.once("error", (error) => {
       clearTimeout(timer);

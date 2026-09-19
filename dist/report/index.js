@@ -19655,12 +19655,14 @@ async function report({
   event,
   workflow,
   key,
+  artifactKey = key,
   mode,
   attachmentToken,
   warn = () => {
   }
 }) {
   identifier(key, "comment-key");
+  identifier(artifactKey, "artifact-key");
   if (!/^[A-Za-z0-9_-]+\.ya?ml$/.test(workflow))
     throw new Error("workflow must be a workflow filename");
   if (!["artifacts", "attachments"].includes(mode))
@@ -19680,7 +19682,7 @@ async function report({
   if (run.status !== "completed" || run.run_attempt !== event.workflow_run.run_attempt) return [];
   const pulls = run.pull_requests?.length ? run.pull_requests : await api.pages(`${base}/commits/${run.head_sha}/pulls`);
   const artifacts = await api.pages(`${base}/actions/runs/${run.id}/artifacts`, "artifacts");
-  const selected = selectArtifacts(artifacts, key, run.run_attempt);
+  const selected = selectArtifacts(artifacts, artifactKey, run.run_attempt);
   const links = [];
   for (const candidate of pulls) {
     const pr = await api.request(`${base}/pulls/${candidate.number}`);
@@ -19775,6 +19777,7 @@ try {
     event,
     workflow: getInput("workflow", { required: true }),
     key: getInput("comment-key") || "betamax",
+    artifactKey: getInput("artifact-key") || void 0,
     mode: getInput("mode") || "artifacts",
     attachmentToken,
     warn: warning

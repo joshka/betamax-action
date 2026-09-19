@@ -17,7 +17,7 @@ application setup and build steps before the rendering action. The example in th
 [a small Ratatui app](examples/ratatui/src/main.rs) and records it in an Ubuntu matrix.
 
 ```yaml
-- uses: joshka/betamax-action@0bc254d5ae6e0db21c8254c4230f270bffcd61a2
+- uses: joshka/betamax-action@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
   with:
     tapes: demos/**/*.tape
     formats: gif,png,webp

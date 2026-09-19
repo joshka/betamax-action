@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { report, selectArtifacts, isStale } from "../src/report.js";
+import { report, selectArtifacts } from "../src/report.js";
 import { GitHub, boundedBody } from "../src/github.js";
 import { digest } from "../src/common.js";
 
@@ -295,4 +295,44 @@ test("artifact digest mismatches and ZIP payloads are rejected", async () => {
       ),
     );
   }
+});
+
+test("API pagination preserves all pages and refuses an incomplete result", async () => {
+  const urls = [];
+  const api = new GitHub("secret", "owner/repo", async (url) => {
+    urls.push(new URL(url));
+    return Response.json({ items: urls.length === 1 ? Array(100).fill(1) : [2] });
+  });
+  assert.equal((await api.pages("/items?state=open", "items")).length, 101);
+  assert.equal(urls[1].searchParams.get("state"), "open");
+  assert.equal(urls[1].searchParams.get("page"), "2");
+  const endless = new GitHub("secret", "owner/repo", async () => Response.json(Array(100).fill(1)));
+  await assert.rejects(endless.pages("/items"), /incomplete report/);
+});
+
+test("two report modes update separate comments from the same artifacts", async () => {
+  const { state, options } = scenario();
+  state.artifacts.push({ id: 11, name: "betamax-betamax-linux-r2-m1.gif", size_in_bytes: 6 });
+  state.comments = [
+    bot("<!-- betamax:betamax -->\n<!-- betamax-run:89 attempt:1 -->"),
+    { ...bot("<!-- betamax:native -->\n<!-- betamax-run:89 attempt:1 -->"), id: 56 },
+  ];
+  await report(options);
+  assert.equal(state.downloads, 0);
+  await report({
+    ...options,
+    key: "native",
+    artifactKey: "betamax",
+    mode: "attachments",
+    attachmentToken: "github_pat_example",
+  });
+  assert.deepEqual(
+    state.writes.map(({ route }) => route),
+    ["/repos/owner/repo/issues/comments/55", "/repos/owner/repo/issues/comments/56"],
+  );
+  assert.match(state.writes[0].body.body, /linux gallery/);
+  assert.doesNotMatch(state.writes[0].body.body, /user-attachments/);
+  assert.match(state.writes[1].body.body, /linux gallery/);
+  assert.match(state.writes[1].body.body, /user-attachments/);
+  assert.equal(state.attachments, 1);
 });
