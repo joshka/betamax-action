@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { report, selectArtifacts, isStale } from "../src/report.js";
+import { report, selectArtifacts } from "../src/report.js";
 import { GitHub, boundedBody } from "../src/github.js";
 import { digest } from "../src/common.js";
 

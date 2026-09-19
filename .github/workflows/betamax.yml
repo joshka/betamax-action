@@ -33,9 +33,14 @@ jobs:
       - name: Build the demo
         run: cargo build --locked --manifest-path examples/ratatui/Cargo.toml
       - name: Render terminal previews
+        id: previews
         uses: $/
         with:
           tapes: examples/tapes/*.tape
           formats: ${{ matrix.formats }}
           variant: ${{ matrix.variant }}
           extra-outputs: .artifacts/demo-checkpoint.png
+      - name: Verify media dimensions and playback timing
+        env:
+          BETAMAX_OUTPUT_DIRECTORY: ${{ steps.previews.outputs.output-directory }}
+        run: node scripts/verify-media.mjs

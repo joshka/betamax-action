@@ -11,7 +11,7 @@
 | `version`              | `0.1.15`           | Exact Betamax CLI version.                                            |
 | `sha256`               | Bundled for 0.1.15 | Archive digest; required for other versions.                          |
 | `install-dependencies` | `true`             | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.    |
-| `timeout-seconds`      | `120`              | Time limit for each tape and each WebP conversion; 1–1800.            |
+| `timeout-seconds`      | `120`              | Time limit for each tape and each animation conversion; 1–1800.       |
 | `retention-days`       | `14`               | Requested retention, 1–90 days, capped by repository policy.          |
 | `comment-key`          | `betamax`          | Shared identifier for rendering and reporting.                        |
 | `variant`              | `default`          | Unique matrix job identifier.                                         |
@@ -21,9 +21,12 @@ Discovery sorts and deduplicates matches. It excludes `.git`, `.jj`, `node_modul
 `dist`, `vendor` and `.artifacts` when finding tapes. Extra outputs can come from build directories.
 Paths outside the working directory and symbolic links are rejected.
 
-PNG and GIF are rendered by Betamax. MP4 and WebM use ffmpeg through Betamax. WebP is converted from
-a GIF capture with ffmpeg's animated WebP encoder. JPEG is accepted through `extra-outputs`; it is
-not a generated preview format. SVG and arbitrary HTML are not accepted as media.
+PNG and GIF are rendered by Betamax. WebP, MP4 and WebM are converted from the GIF capture with
+ffmpeg, preserving its frame delays. This avoids a timing bug in Betamax 0.1.15's direct video
+writer. Converted animation inherits GIF's color palette; PNG retains the original raster colors.
+Video is encoded at 30 FPS, rounding frame delays to that cadence. JPEG is accepted through
+`extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are not accepted as
+media.
 
 The default font installation improves coverage, including CJK fallback, but does not guarantee
 identical rendering across runner images. Install your preferred fonts before the action and choose
@@ -33,12 +36,13 @@ consumer workflow steps and must never be restored by the privileged reporter.
 
 ## Rendering outputs and failures
 
-| Output         | Meaning                                   |
-| -------------- | ----------------------------------------- |
-| `artifact-url` | HTML gallery artifact link.               |
-| `artifact-id`  | Numeric gallery artifact ID.              |
-| `tapes-passed` | Number of tapes that exited successfully. |
-| `tapes-failed` | Number of tapes that failed or timed out. |
+| Output             | Meaning                                           |
+| ------------------ | ------------------------------------------------- |
+| `output-directory` | Local directory containing media and diagnostics. |
+| `artifact-url`     | HTML gallery artifact link.                       |
+| `artifact-id`      | Numeric gallery artifact ID.                      |
+| `tapes-passed`     | Number of tapes that exited successfully.         |
+| `tapes-failed`     | Number of tapes that failed or timed out.         |
 
 The action runs remaining tapes after an execution failure, uploads available evidence, then fails
 the step. Setup and discovery failures stop rendering. The job's timeout is the final limit if a

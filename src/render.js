@@ -2,6 +2,7 @@ import * as glob from "@actions/glob";
 import { mkdir, readFile, writeFile, lstat } from "node:fs/promises";
 import path from "node:path";
 import { MAX_MEDIA, MAX_TOTAL_BYTES, html, readMedia, regularPath } from "./common.js";
+import { encodeAnimation } from "./encode.js";
 import { execute } from "./process.js";
 
 const EXCLUDED = new Set([".git", ".jj", "node_modules", "target", "dist", "vendor", ".artifacts"]);
@@ -92,7 +93,7 @@ export async function render({
     const tapeDir = path.join(directory, `tape-${index + 1}`);
     await mkdir(tapeDir);
     if ((await lstat(tape)).size > 1024 * 1024) throw new Error("Tape exceeds the 1 MiB limit");
-    const requested = [...new Set(formats.map((format) => (format === "webp" ? "gif" : format)))];
+    const requested = [...new Set(formats.map((format) => (format === "png" ? "png" : "gif")))];
     const outputs = requested.map((format) => path.join(tapeDir, `preview.${format}`));
     const source = await readFile(tape, "utf8");
     const augmented = `${source}\n${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}\n`;
@@ -111,24 +112,19 @@ export async function render({
     }
     const status = outcome.timedOut ? "timed out" : outcome.code === 0 ? "passed" : "failed";
     results.push({ tape: label, status });
-    if (formats.includes("webp") && outcome.code === 0) {
-      const converted = await execute(
-        "ffmpeg",
-        [
-          "-nostdin",
-          "-v",
-          "error",
-          "-i",
-          path.join(tapeDir, "preview.gif"),
-          "-loop",
-          "0",
-          "-c:v",
-          "libwebp_anim",
-          path.join(tapeDir, "preview.webp"),
-        ],
-        { cwd: root, timeout, log: path.join(directory, `webp-${index + 1}.log`) },
-      );
-      if (converted.code !== 0) problems.push(`${label}: WebP conversion failed; see diagnostics`);
+    if (outcome.code === 0) {
+      for (const format of formats.filter((value) => !["gif", "png"].includes(value))) {
+        try {
+          await encodeAnimation(
+            format,
+            tapeDir,
+            path.join(directory, `${format}-${index + 1}.log`),
+            timeout,
+          );
+        } catch (error) {
+          problems.push(`${label}: ${error.message}`);
+        }
+      }
     }
     for (const format of formats) {
       const file = path.join(tapeDir, `preview.${format}`);
@@ -143,7 +139,9 @@ export async function render({
     }
   }
 
-  for (const file of await discover(root, extraOutputs, false)) {
+  const extras = await discover(root, extraOutputs, false);
+  if (extraOutputs.trim() && !extras.length) problems.push("No files matched extra-outputs");
+  for (const file of extras) {
     await collect(root, file, path.relative(root, file));
   }
   const manifest = {

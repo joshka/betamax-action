@@ -6,6 +6,7 @@ Rust Ratatui app as its integration fixture. Betamax itself is downloaded as a v
 ```sh
 npm ci --ignore-scripts
 npm test
+npm run lint
 npm run format:check
 npm run build
 node scripts/check-dist.mjs
