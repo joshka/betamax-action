@@ -24,9 +24,9 @@ Paths outside the working directory and symbolic links are rejected.
 PNG and GIF are rendered by Betamax. WebP, MP4 and WebM are converted from the GIF capture with
 ffmpeg, preserving its frame delays. This avoids a timing bug in Betamax 0.1.15's direct video
 writer. Converted animation inherits GIF's color palette; PNG retains the original raster colors.
-Video is encoded at 30 FPS, rounding frame delays to that cadence. JPEG is accepted through
-`extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are not accepted as
-media.
+Converted animation is encoded at 30 FPS, rounding frame delays to that cadence. JPEG is accepted
+through `extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are not
+accepted as media.
 
 The default font installation improves coverage, including CJK fallback, but does not guarantee
 identical rendering across runner images. Install your preferred fonts before the action and choose

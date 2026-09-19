@@ -101297,7 +101297,7 @@ import path12 from "node:path";
 import path11 from "node:path";
 async function encodeAnimation(format, directory, log2, timeout) {
   const codecs = {
-    webp: ["-loop", "0", "-c:v", "libwebp_anim"],
+    webp: ["-loop", "0", "-c:v", "libwebp_anim", "-vf", "fps=30"],
     mp4: [
       "-c:v",
       "libx264",
@@ -101326,7 +101326,7 @@ async function encodeAnimation(format, directory, log2, timeout) {
       "-i",
       path11.join(directory, "preview.gif"),
       "-fps_mode",
-      format === "webp" ? "vfr" : "cfr",
+      "cfr",
       ...codecs[format],
       path11.join(directory, `preview.${format}`)
     ],

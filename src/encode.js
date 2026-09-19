@@ -5,7 +5,7 @@ import { execute } from "./process.js";
 // GIF retains those durations; use it as the animation source until that writer is fixed.
 export async function encodeAnimation(format, directory, log, timeout) {
   const codecs = {
-    webp: ["-loop", "0", "-c:v", "libwebp_anim"],
+    webp: ["-loop", "0", "-c:v", "libwebp_anim", "-vf", "fps=30"],
     mp4: [
       "-c:v",
       "libx264",
@@ -34,7 +34,7 @@ export async function encodeAnimation(format, directory, log, timeout) {
       "-i",
       path.join(directory, "preview.gif"),
       "-fps_mode",
-      format === "webp" ? "vfr" : "cfr",
+      "cfr",
       ...codecs[format],
       path.join(directory, `preview.${format}`),
     ],

@@ -296,3 +296,16 @@ test("artifact digest mismatches and ZIP payloads are rejected", async () => {
     );
   }
 });
+
+test("API pagination preserves all pages and refuses an incomplete result", async () => {
+  const urls = [];
+  const api = new GitHub("secret", "owner/repo", async (url) => {
+    urls.push(new URL(url));
+    return Response.json({ items: urls.length === 1 ? Array(100).fill(1) : [2] });
+  });
+  assert.equal((await api.pages("/items?state=open", "items")).length, 101);
+  assert.equal(urls[1].searchParams.get("state"), "open");
+  assert.equal(urls[1].searchParams.get("page"), "2");
+  const endless = new GitHub("secret", "owner/repo", async () => Response.json(Array(100).fill(1)));
+  await assert.rejects(endless.pages("/items"), /incomplete report/);
+});
