@@ -7,6 +7,24 @@ import { mediaType } from "../src/common.js";
 // Real fixture assertions: readable media, visible frames, and preserved elapsed time.
 const directory = process.env.BETAMAX_OUTPUT_DIRECTORY;
 assert.ok(directory, "BETAMAX_OUTPUT_DIRECTORY must point to the render action output");
+const manifest = JSON.parse(await readFile(path.join(directory, "manifest.json"), "utf8"));
+assert.deepEqual(manifest.problems, []);
+assert.ok(manifest.results.every((result) => result.status === "passed"));
+const expected = process.env.BETAMAX_EXPECTED_FORMATS?.split(",").sort();
+if (expected) {
+  for (const [index, result] of manifest.results.entries()) {
+    const produced = manifest.media
+      .filter((item) => item.label.startsWith(`${result.tape} (`))
+      .map((item) => path.extname(item.name).slice(1))
+      .sort();
+    assert.deepEqual(produced, expected, "Requested native formats must all be collected");
+    const previews = (await readdir(path.join(directory, `tape-${index + 1}`))).sort();
+    assert.deepEqual(
+      previews,
+      expected.map((format) => `preview.${format}`),
+    );
+  }
+}
 const files = (await readdir(directory)).filter((name) =>
   /-m\d+\.(gif|png|webp|mp4|webm)$/.test(name),
 );
@@ -19,13 +37,17 @@ for (const file of files) {
   if (extension === "webp") {
     let frames = 0;
     let duration = 0;
+    const durations = [];
     for (let offset = 12; offset + 8 <= bytes.length;) {
       const kind = bytes.toString("ascii", offset, offset + 4);
       const size = bytes.readUInt32LE(offset + 4);
       assert.ok(offset + 8 + size <= bytes.length, "Truncated WebP chunk");
       if (kind === "ANMF") {
         frames++;
-        duration += bytes.readUIntLE(offset + 8 + 12, 3);
+        const hold = bytes.readUIntLE(offset + 8 + 12, 3);
+        assert.ok(hold > 0, "WebP frame has no hold");
+        durations.push(hold);
+        duration += hold;
       }
       offset += 8 + size + (size % 2);
     }
@@ -33,6 +55,9 @@ for (const file of files) {
       frames >= 3 && duration >= 2400 && duration <= 2700,
       `WebP lost animation timing: ${frames} frames, ${duration}ms`,
     );
+    execFileSync("python3", ["scripts/verify-webp.py", fullPath, JSON.stringify(durations)], {
+      stdio: "inherit",
+    });
   } else if (extension !== "png") {
     const metadata = JSON.parse(
       execFileSync(

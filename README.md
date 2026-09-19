@@ -9,6 +9,7 @@ when the PR changes. Keep automated assertions alongside the recordings to check
 regressions that a visual review may miss.
 
 The default comment links to a downloadable HTML gallery with GIF, PNG, WebP and video previews.
+WebP renders natively with Betamax 0.1.18, preserving colors and frame holds without GIF conversion.
 Galleries follow the reader's light or dark theme. Each media file is also available as an
 individual artifact. Generated media stays out of your repository.
 

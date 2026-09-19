@@ -155,3 +155,54 @@ for (const line of outputs) {
   assert.equal(result.media.length, 2);
   assert.equal(result.results[0].status, "passed");
 });
+
+for (const behavior of ["native", "unsupported", "missing"]) {
+  test(`WebP-only rendering: ${behavior} output stays native and failures remain visible`, async (t) => {
+    const root = await fixture(t);
+    await writeFile(path.join(root, "webp.tape"), "Sleep 1s");
+    const binary = path.join(root, "fake-betamax");
+    await writeFile(
+      binary,
+      `#!/usr/bin/env node
+const fs = require('node:fs');
+const tape = fs.readFileSync(0, 'utf8');
+const outputs = tape.split('\\n').filter(line => line.startsWith('Output '));
+fs.appendFileSync('invocations', 'run\\n');
+if (outputs.length !== 1 || !outputs[0].endsWith('.webp"')) process.exit(2);
+if (${JSON.stringify(behavior)} === 'unsupported') {
+  console.error('unsupported output format: webp');
+  process.exit(1);
+}
+if (${JSON.stringify(behavior)} === 'native') {
+  fs.writeFileSync(JSON.parse(outputs[0].slice(7)), 'RIFF1234WEBPnative');
+}
+`,
+      { mode: 0o755 },
+    );
+    const result = await render({
+      root,
+      directory: path.join(root, "out"),
+      binary,
+      patterns: "*.tape",
+      formats: ["webp"],
+      timeout: 5000,
+      extraOutputs: "",
+      prefix: "betamax-test-webp-r1",
+    });
+    assert.equal(await readFile(path.join(root, "invocations"), "utf8"), "run\n");
+    assert.equal(result.results[0].status, behavior === "unsupported" ? "failed" : "passed");
+    assert.equal(result.media.length, behavior === "native" ? 1 : 0);
+    if (behavior === "native") {
+      assert.deepEqual(result.problems, []);
+      assert.equal(result.media[0].bytes.toString(), "RIFF1234WEBPnative");
+      assert.match(await readFile(result.gallery, "utf8"), /data:image\/webp;base64,/);
+    } else if (behavior === "missing") {
+      assert.match(result.problems[0], /requested webp preview was not produced/);
+    } else {
+      assert.match(
+        await readFile(path.join(root, "out", "tape-1.log"), "utf8"),
+        /unsupported output/,
+      );
+    }
+  });
+}

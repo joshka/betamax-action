@@ -5,7 +5,7 @@ import { prepareBinary } from "../src/install.js";
 // separately builds its PR's CLI; this fixture uses a verified release to keep action CI small.
 await prepareBinary({
   directory: ".artifacts/local-cli/release",
-  version: "0.1.17",
+  version: "0.1.18",
   dependencies: false,
 });
 await writeFile(

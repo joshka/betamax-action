@@ -5,6 +5,10 @@ import { digest, regularPath } from "./common.js";
 import { execute } from "./process.js";
 
 const CHECKSUMS = {
+  "0.1.18-x86_64-unknown-linux-gnu":
+    "c04bc6716963d7d5158fa0504049776bb0acab693335fbfbd9e393b87a297143",
+  "0.1.18-aarch64-unknown-linux-gnu":
+    "beb6abcd40a400fbad14b8ee418efa790710ce7fdc4093614044d009669e7f56",
   "0.1.17-x86_64-unknown-linux-gnu":
     "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
   "0.1.17-aarch64-unknown-linux-gnu":
@@ -37,7 +41,7 @@ async function installRelease(directory, version, checksum) {
     throw new Error("The action supports Ubuntu x64 and ARM64 runners");
   }
   if (!/^\d+\.\d+\.\d+$/.test(version))
-    throw new Error("version must be an exact release such as 0.1.17");
+    throw new Error("version must be an exact release such as 0.1.18");
   const target = `${process.arch === "x64" ? "x86_64" : "aarch64"}-unknown-linux-gnu`;
   const expected = checksum || CHECKSUMS[`${version}-${target}`];
   if (!/^[a-f0-9]{64}$/.test(expected ?? ""))
