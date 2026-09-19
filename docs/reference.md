@@ -1,5 +1,8 @@
 # Action reference
 
+Configure `joshka/betamax-action` to render tapes and `joshka/betamax-action/report` to publish
+comments. For complete workflows, follow the [setup guide](getting-started.md).
+
 ## Rendering inputs
 
 | Input                  | Default            | Behavior                                                              |
@@ -16,10 +19,17 @@
 | `comment-key`          | `betamax`          | Shared identifier for rendering and reporting.                        |
 | `variant`              | `default`          | Unique matrix job identifier.                                         |
 
-Identifiers contain 1–40 lowercase letters, digits or hyphens and begin with a letter or digit.
-Discovery sorts and deduplicates matches. It excludes `.git`, `.jj`, `node_modules`, `target`,
-`dist`, `vendor` and `.artifacts` when finding tapes. Extra outputs can come from build directories.
-Paths outside the working directory and symbolic links are rejected.
+Rendering identifiers (`comment-key` and `variant`) contain 1–40 lowercase letters, digits or
+hyphens and begin with a letter or digit.
+
+## File discovery and paths
+
+The render action resolves tape and extra-output globs relative to `working-directory`. Discovery
+sorts and deduplicates matches. It excludes `.git`, `.jj`, `node_modules`, `target`, `dist`,
+`vendor` and `.artifacts` when finding tapes. Extra outputs can come from build directories. Paths
+outside the working directory and symbolic links are rejected.
+
+## Supported formats and conversion
 
 PNG and GIF are rendered by Betamax. WebP, MP4 and WebM are converted from the GIF capture with
 ffmpeg, preserving its frame delays. This avoids a timing bug in Betamax 0.1.15's direct video
@@ -28,13 +38,15 @@ Converted animation is encoded at 30 FPS, rounding frame delays to that cadence.
 through `extra-outputs`; it is not a generated preview format. SVG and arbitrary HTML are not
 accepted as media.
 
+## Fonts and dependencies
+
 The default font installation improves coverage, including CJK fallback, but does not guarantee
 identical rendering across runner images. Install your preferred fonts before the action and choose
 `Set FontFamily` in the tape. Set `install-dependencies: false` when you manage ffmpeg and fonts
 elsewhere. The action does not persist an installation cache. Application caches belong in earlier
 consumer workflow steps and must never be restored by the privileged reporter.
 
-## Rendering outputs and failures
+## Rendering outputs
 
 | Output             | Meaning                                           |
 | ------------------ | ------------------------------------------------- |
@@ -44,19 +56,26 @@ consumer workflow steps and must never be restored by the privileged reporter.
 | `tapes-passed`     | Number of tapes that exited successfully.         |
 | `tapes-failed`     | Number of tapes that failed or timed out.         |
 
-The action runs remaining tapes after an execution failure, uploads available evidence, then fails
-the step. Setup and discovery failures stop rendering. The job's timeout is the final limit if a
-process cannot be stopped or a runner is cancelled. Keep `timeout-minutes` in the consumer job.
+## Failed captures and diagnostics
+
+The rendering action runs remaining tapes after an execution failure, uploads available evidence,
+then fails the step. Setup and discovery failures stop rendering. The job's timeout is the final
+limit if a process cannot be stopped or a runner is cancelled. Keep `timeout-minutes` in the
+consumer job.
 
 A successful capture proves the tape completed. It does not prove that every rendered pixel is
 correct. Final animations may be missing after a timeout; checkpoint screenshots can still be
 collected with `extra-outputs`.
 
+## File and log limits
+
 Limits per rendering job: 20 tapes, 20 media files, 10 MiB per file and 40 MiB of media in total.
 Use a matrix or fewer formats for larger suites. Logs retain at most 1 MiB per process and are
 stored as artifacts rather than printed as workflow commands.
 
-Each run uploads an unzipped HTML gallery, individual unzipped media files, and a ZIP of
+## Gallery access and retention
+
+Each rendering run uploads an unzipped HTML gallery, individual unzipped media files, and a ZIP of
 diagnostics. The gallery embeds media as data URLs and needs no external scripts or media server.
 GitHub artifact access still requires sign-in and expires under the repository's retention policy.
 
@@ -71,12 +90,18 @@ GitHub artifact access still requires sign-in and expires under the repository's
 | `token`            | `${{ github.token }}` | Built-in token with Actions read and PR write permissions.           |
 | `attachment-token` | Empty                 | User token for native uploads only.                                  |
 
+## Comment ownership and update behavior
+
 The reporter outputs `comment-url` when it creates or updates a comment. It requires the
 `workflow_run` event on GitHub.com and the built-in Actions bot identity for comment ownership. Use
 separate comment keys for separate source workflows. Share a key among matrix jobs in one workflow,
 not among independent workflows.
 
-Native mode permits at most 20 media files and 40 MiB across the selected matrix variants. A
-repeated notification for an already published run attempt does not upload again. A new rendering
-attempt creates new attachments. Partial native upload failures leave gallery/artifact links in the
-comment and warnings in the reporter log. Rerun the rendering workflow to retry those uploads.
+## Native upload limits and retries
+
+In the report action, `mode: attachments` requires a separately configured
+[user token](attachments.md#configure-a-user-token). Native mode permits at most 20 media files and
+40 MiB across the selected matrix variants. A repeated notification for an already published run
+attempt does not upload again. A new rendering attempt creates new attachments. Partial native
+upload failures leave gallery/artifact links in the comment and warnings in the reporter log. Rerun
+the rendering workflow to retry those uploads.

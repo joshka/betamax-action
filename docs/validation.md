@@ -28,7 +28,7 @@ remains in Actions artifacts, rather than in the source repository.
 
 These checks caught Betamax 0.1.15's direct video writer dropping frame delays. The action now
 converts animations from GIF at 30 FPS, including the last frame's hold. PNG remains a direct
-capture. See the [format tradeoffs](reference.md#rendering-inputs).
+capture. See the [format tradeoffs](reference.md#supported-formats-and-conversion).
 
 ## PR reporting
 

@@ -3,17 +3,20 @@
 Native attachments place images and video directly in the PR comment. Gallery mode works without
 extra secrets and remains the default.
 
-GitHub's Actions token cannot upload native attachments. GitHub CLI's current uploader accepts user
-OAuth tokens, classic PATs and fine-grained PATs, and rejects GitHub App tokens. Giving
-`GITHUB_TOKEN` more permissions does not change its token type.
+Before enabling this mode, set up the [render and report workflows](getting-started.md). The
+examples below modify the report job on your default branch. GitHub requires a user token for native
+uploads; increasing `GITHUB_TOKEN` permissions does not enable them.
 
 ## Configure a user token
+
+For the existing [report job](getting-started.md#update-the-pr-comment), configure a separate token
+for uploads. Leave the comment API token at its default, `${{ github.token }}`.
 
 1. Create a dedicated user token restricted to the target repository. The account must have write
    access to that repository. For a fine-grained PAT, begin with repository Contents write
    permission. This configuration passed the live test in `joshka/betamax-action`; it is not a
-   proven minimum. Organization policies may impose additional approval requirements. The upload
-   endpoint is not a stable, separately documented REST API.
+   proven minimum. Organization policies may impose additional approval requirements. The endpoint
+   is not a stable, separately documented REST API.
 1. Save it as an Actions secret named `BETAMAX_ATTACHMENT_TOKEN`, preferably in an environment with
    required reviewers. Set that environment on the report job if used.
 1. Add these inputs to the report step on the default branch:
@@ -30,6 +33,10 @@ only to GitHub's native upload endpoint. Never provide this secret to the render
 `pull_request_target` workflow that executes PR code.
 
 ## Compare both modes on one PR
+
+First [configure the upload secret](#configure-a-user-token). Replace the steps in your existing
+[report job](getting-started.md#update-the-pr-comment) with the following two steps, keeping that
+job's permissions and workflow concurrency group.
 
 Use two report steps to keep a gallery-link comment and a native-attachment comment. Both read the
 same rendered artifacts. `comment-key` identifies the comment; `artifact-key` selects the render
@@ -52,33 +59,49 @@ steps:
       attachment-token: ${{ secrets.BETAMAX_ATTACHMENT_TOKEN }}
 ```
 
-The pinned commit supports `artifact-key`. Keep both steps in one trusted report job with the
-permissions and concurrency group from the [setup guide](getting-started.md#update-the-pr-comment).
-Do not rerun the application or give the render job a PAT. Each reporter updates only its own bot
-comment, including on later commits and partial reruns.
+Each reporter updates only its own bot comment, including on later commits and partial reruns. The
+render job runs once and receives no PAT.
 
-## Upload behavior
+## Supported files and limits
 
-The reporter downloads individual raw media artifacts into memory, checks their recorded SHA-256
-digests and file signatures, and uploads them to the same endpoint used by GitHub CLI 2.101.0. It
-never extracts ZIP files or executes downloaded content. It updates the exact comment ID selected by
-marker and bot author; it does not use `gh --edit-last`.
+Native mode accepts PNG, GIF, WebP, JPEG, MP4 and WebM from the render action's media artifacts.
+Each file is limited to 10 MiB, including video. A report accepts at most 20 files and 40 MiB across
+all selected matrix variants. Narrow `formats` or `extra-outputs` in the render job if you exceed
+these limits.
 
-PNG, GIF, WebP, JPEG, MP4 and WebM are accepted. Every file is limited to 10 MiB, including video,
-to work with free GitHub plans. Total limits are 20 files and 40 MiB per report. Files that fail to
-upload retain a link to the Actions artifact. GitHub can reject uploads because of token access,
-organization policy, media validation or rate limits.
+## Attachment access and lifetime
 
 Public-repository attachments can be viewed without authentication. Attachments on private or
-internal repositories require repository access. Unlike Actions artifacts, these URLs are not tied
-to the workflow artifact retention period. The action does not delete old attachments when it
-updates a comment.
+internal repositories require repository access. Unlike Actions artifacts, attachment URLs are not
+tied to workflow artifact retention. Updating a comment does not delete its old attachments.
 
-A fine-grained PAT limited to this repository with Contents read/write successfully uploaded GIF,
-PNG, WebP, MP4 and WebM in the [live test](validation.md#native-attachments). GitHub rendered the
-images and video inline in a separate comment. Test your own account and repository configuration
-before relying on it; the result does not establish minimum permissions or private-repository
-behavior.
+The built-in Actions bot owns the comment. The upload token is used only to send media to GitHub;
+[security guidance](../SECURITY.md#optional-native-uploads) describes credential and download
+checks.
+
+## Failures and retries
+
+When an individual native upload fails, the reporter leaves an artifact link in the comment and
+writes a warning to its job log. The report step can therefore succeed even when some files were not
+attached. Check the comment and warnings when testing a new token.
+
+For authorization errors, check token expiration, selected repository, repository write permission,
+and organization approval policy. For media errors, check the file type and size against the
+[upload limits](#supported-files-and-limits).
+
+After correcting the problem, rerun the **render workflow** for the current PR head. Rerunning only
+the report workflow does not retry an already published run attempt. A new rendering attempt creates
+new attachments and updates the same comment.
+
+## Verified configuration
+
+A fine-grained PAT limited to `joshka/betamax-action` with Contents read/write successfully uploaded
+GIF, PNG, WebP, MP4 and WebM in the [live test](validation.md#native-attachments). GitHub rendered
+the images and video inline in a separate comment. This establishes one working configuration, not
+the minimum permissions or private-repository behavior.
+
+The upload endpoint is the one used by GitHub CLI, rather than a stable, separately documented REST
+API. Test your own account and repository configuration before relying on it.
 
 ## Sources
 
