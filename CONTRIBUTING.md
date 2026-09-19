@@ -13,8 +13,11 @@ cargo fmt --manifest-path examples/ratatui/Cargo.toml --check
 cargo clippy --locked --manifest-path examples/ratatui/Cargo.toml -- -D warnings
 markdownlint-cli2
 zizmor --no-progress .
-actionlint
+actionlint -ignore 'specifying action "\$/" in invalid format'
 ```
+
+Actionlint 1.7.12 does not recognize GitHub's new `$/` self-repository action syntax. The command
+above excludes that one diagnostic; zizmor 1.30.1 and live CI validate the reference.
 
 Commit `dist/` and dependency lockfiles with source changes. Consumers execute the checked-in
 bundle; they do not install npm dependencies. CI compares a fresh bundle with the committed files.

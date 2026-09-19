@@ -31,6 +31,8 @@ fn main() -> io::Result<()> {
             })?;
             thread::sleep(Duration::from_millis(400));
         }
+        // Keep the completed screen visible while the tape captures its final previews.
+        thread::sleep(Duration::from_secs(5));
         Ok(())
     })();
     ratatui::restore();
