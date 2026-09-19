@@ -11,6 +11,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -31,9 +32,10 @@ jobs:
           components: rustfmt, clippy
       - run: cargo fmt --manifest-path examples/ratatui/Cargo.toml --check
       - run: cargo clippy --locked --manifest-path examples/ratatui/Cargo.toml -- -D warnings
-      - run: npm audit --omit=dev
+      - run: npm audit
   security:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:

@@ -33,7 +33,7 @@ jobs:
       - name: Build the demo
         run: cargo build --locked --manifest-path examples/ratatui/Cargo.toml
       - name: Render terminal previews
-        uses: ./
+        uses: $/
         with:
           tapes: examples/tapes/*.tape
           formats: ${{ matrix.formats }}
