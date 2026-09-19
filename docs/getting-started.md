@@ -5,7 +5,7 @@ normal workflow step, then let Betamax capture its terminal session.
 
 ## Render pull requests
 
-Create `.github/workflows/betamax.yml`. Replace `161ef25dd72448bfc93428e89a38b0af7163d515` with a
+Create `.github/workflows/betamax.yml`. Replace `23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b` with a
 reviewed commit from this repository.
 
 ```yaml
@@ -26,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
       # Install your application's toolchain and build it here.
-      - uses: joshka/betamax-action@161ef25dd72448bfc93428e89a38b0af7163d515
+      - uses: joshka/betamax-action@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
         with:
           tapes: demos/**/*.tape
           formats: gif,png,webp
@@ -63,7 +63,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@161ef25dd72448bfc93428e89a38b0af7163d515
+      - uses: joshka/betamax-action/report@23bc495e75ddd3c0997cf7a1bf80db1c22bbb53b
         with:
           workflow: betamax.yml
 ```
