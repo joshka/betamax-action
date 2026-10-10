@@ -3,7 +3,7 @@ description: Render terminal tapes into a review gallery and downloadable media
 author: Josh McKinney
 branding:
   icon: film
-  color: purple
+  color: orange
 inputs:
   tapes:
     description: Newline-separated tape globs, relative to working-directory
