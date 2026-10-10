@@ -2,3 +2,5 @@ node_modules/
 target/
 .artifacts/
 *.log
+
+**/.rumdl_cache/

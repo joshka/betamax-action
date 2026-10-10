@@ -2,3 +2,5 @@ dist/
 node_modules/
 Cargo.lock
 examples/ratatui/Cargo.lock
+
+**/.rumdl_cache/
