@@ -125,6 +125,9 @@ export async function render({
       problems.push(`${label}: ${error.message}`);
     }
     const status = outcome.timedOut ? "timed out" : outcome.code === 0 ? "passed" : "failed";
+    if (outcome.timedOut) problems.push(`${label}: exceeded ${timeout}ms execution limit`);
+    else if (outcome.signal) problems.push(`${label}: terminated by ${outcome.signal}`);
+    else if (outcome.code !== 0) problems.push(`${label}: exited with code ${outcome.code}`);
     results.push({ tape: label, status });
     for (const format of formats) {
       const file = path.join(tapeDir, `preview.${format}`);

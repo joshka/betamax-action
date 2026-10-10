@@ -98661,16 +98661,18 @@ function execute(program, args, { cwd, input, log: log2, timeout = 12e4, env = p
       stream4?.end();
       reject(error2);
     });
-    child.once("close", (code) => {
+    child.once("close", (code, signal) => {
       clearTimeout(timer);
-      if (stream4) stream4.end(() => resolve2({ code, timedOut }));
-      else resolve2({ code, timedOut });
+      if (stream4) stream4.end(() => resolve2({ code, signal, timedOut }));
+      else resolve2({ code, signal, timedOut });
     });
   });
 }
 
 // src/install.js
 var CHECKSUMS = {
+  "0.1.22-aarch64-unknown-linux-gnu": "da7fc6dacb2db9ae12034698422ed1f8b0467f5b46d79fdb889689b61cfc97fd",
+  "0.1.22-x86_64-unknown-linux-gnu": "497c0bbf6da724e90be49e48ade317d99567e4b03e4e86f03c0dac691ec6358f",
   "0.1.20-aarch64-unknown-linux-gnu": "c5b0729b60a407df397cb62a897cc4315cb603220d845e86b92bf5fa2b74b397",
   "0.1.20-x86_64-unknown-linux-gnu": "389e890509117fca4aee65192dbc92c4691fdd479140c57e5a295b4bf27d3d69",
   "0.1.19-aarch64-unknown-linux-gnu": "1694c35935675d9eac567818cee226fdb8fe8cc75035fc68229b396b99ca6b68",
@@ -101416,6 +101418,9 @@ ${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}
       problems.push(`${label}: ${error2.message}`);
     }
     const status = outcome.timedOut ? "timed out" : outcome.code === 0 ? "passed" : "failed";
+    if (outcome.timedOut) problems.push(`${label}: exceeded ${timeout}ms execution limit`);
+    else if (outcome.signal) problems.push(`${label}: terminated by ${outcome.signal}`);
+    else if (outcome.code !== 0) problems.push(`${label}: exited with code ${outcome.code}`);
     results.push({ tape: label, status });
     for (const format of formats) {
       const file = path11.join(tapeDir, `preview.${format}`);
@@ -101503,7 +101508,7 @@ try {
       root,
       directory: path12.join(directory, "bin"),
       binary: suppliedBinary,
-      version: getInput("version") || "0.1.20",
+      version: getInput("version") || "0.1.22",
       checksum: getInput("sha256"),
       dependencies: getBooleanInput("install-dependencies")
     });
