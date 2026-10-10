@@ -25,6 +25,9 @@ jobs:
       - run: npm test
       - run: npm run format:check
       - run: npm run lint
+      - uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
+        with:
+          tool: rumdl@0.2.77
       - run: npm run lint:md
       - run: node scripts/check-dist.mjs
       - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
