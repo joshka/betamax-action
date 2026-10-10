@@ -40,10 +40,10 @@ export function execute(
       stream?.end();
       reject(error);
     });
-    child.once("close", (code) => {
+    child.once("close", (code, signal) => {
       clearTimeout(timer);
-      if (stream) stream.end(() => resolve({ code, timedOut }));
-      else resolve({ code, timedOut });
+      if (stream) stream.end(() => resolve({ code, signal, timedOut }));
+      else resolve({ code, signal, timedOut });
     });
   });
 }

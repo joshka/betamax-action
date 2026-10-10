@@ -110,7 +110,30 @@ for (const line of tape.split('\\n').filter(line => line.startsWith('Output ')))
     ["failed", "passed"],
   );
   assert.equal(result.media.length, 1);
+  assert.match(result.problems[0], /a.tape: exited with code 1/);
   assert.match(await readFile(result.gallery, "utf8"), /a.tape/);
+});
+
+test("a silent process signal is recorded in the gallery and diagnostics", async (t) => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, "crash.tape"), "Sleep 1s");
+  const binary = path.join(root, "fake-betamax");
+  await writeFile(binary, '#!/bin/sh\nkill -TERM "$$"\n', { mode: 0o755 });
+  const result = await render({
+    root,
+    directory: path.join(root, "out"),
+    binary,
+    patterns: "*.tape",
+    formats: ["png"],
+    timeout: 5000,
+    extraOutputs: "",
+    prefix: "betamax-test-crash-r1",
+  });
+  assert.equal(result.results[0].status, "failed");
+  assert.deepEqual(result.problems, ["crash.tape: terminated by SIGTERM"]);
+  assert.match(await readFile(result.gallery, "utf8"), /terminated by SIGTERM/);
+  const manifest = JSON.parse(await readFile(path.join(root, "out", "manifest.json"), "utf8"));
+  assert.deepEqual(manifest.problems, result.problems);
 });
 
 test("an empty tape selection fails visibly", async (t) => {
