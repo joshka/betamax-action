@@ -27,7 +27,7 @@ jobs:
       - run: npm run lint
       - run: npm run lint:md
       - run: node scripts/check-dist.mjs
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
           toolchain: "1.98.1"
           components: rustfmt, clippy
