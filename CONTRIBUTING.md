@@ -1,8 +1,9 @@
 # Contributing
 
 Use Node.js 24 or newer. The integration fixture also needs Rust; CI pins Rust 1.98.1 and
-Node.js 24. The [maintainer guide](docs/development.md) describes the architecture and integration
-tests.
+Node.js 24. Install rumdl 0.2.77 for Markdown linting
+(`cargo install rumdl --version 0.2.77 --locked`). The [maintainer guide](docs/development.md)
+describes the architecture and integration tests.
 
 ## Install and check
 
@@ -56,3 +57,6 @@ review and deployment before testing with write credentials. Keep those credenti
 Update the README when inputs, outputs or user-visible behavior change. Run Markdown lint and
 formatting checks for documentation edits. Record version-specific results and run links in the PR
 or release record, including checks you could not run.
+
+Markdown lint rules are configured in `.config/rumdl.toml`. `npm run lint:md` uses the same
+configuration locally and in CI. Prettier continues to format Markdown.

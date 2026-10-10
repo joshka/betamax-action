@@ -1,0 +1,10 @@
+[global]
+exclude = ["node_modules/**", "dist/**"]
+
+[line-length]
+line-length = 100
+code-blocks = false
+tables = false
+
+[no-duplicate-heading]
+siblings-only = true

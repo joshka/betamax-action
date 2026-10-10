@@ -12,7 +12,7 @@
     "test": "node --test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint:md": "markdownlint-cli2",
+    "lint:md": "rumdl check --config .config/rumdl.toml .",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -26,12 +26,6 @@
     "eslint": "10.11.0",
     "globals": "17.12.0",
     "js-yaml": "5.4.2",
-    "markdownlint-cli2": "0.23.2",
     "prettier": "3.9.8"
-  },
-  "overrides": {
-    "markdownlint-cli2": {
-      "smol-toml": "1.8.0"
-    }
   }
 }
