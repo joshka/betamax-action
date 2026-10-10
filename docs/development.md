@@ -172,8 +172,26 @@ To change the default Betamax release:
    local executable path in CI. Inspect recordings as well as decoder assertions.
 1. Record the version, digests, run links and untested combinations in the PR or release record.
 
-The action's release version is separate from its default Betamax version. Stable tags and
-Marketplace publication do not yet have an agreed release policy.
+## Action releases
+
+The action's version is separate from its default Betamax CLI version. The renderer and reporter
+share one release. Publish semantic versions such as `v1.0.0`; never move a published full-version
+tag. Move the `v1` compatibility tag only to a validated stable release in that major version.
+Breaking input, output, artifact protocol, or runner support changes require a new major version.
+The optional attachment uploader depends on an undocumented GitHub endpoint and remains best effort.
+
+1. Merge the reviewed change after CI and every rendering matrix job pass. Verify a live PR report,
+   including native uploads when affected, and inspect recordings alongside decoder checks.
+1. Check CI and rendering on the exact default-branch commit selected for release. Keep committed
+   bundles reproducible, and record validation links and known limitations in the release notes.
+1. Draft a release for a new full-version tag targeting that commit. Include setup instructions,
+   supported runners, the default CLI version, and an immutable commit SHA for consumers to pin.
+1. Publish the release with GitHub Marketplace enabled. Use the root renderer as the listing;
+   document the companion `report` action in the same README.
+1. Create or advance the major compatibility tag to the same commit after publication succeeds.
+   Verify both action entry points resolve through the full-version and major tags.
+
+Do not publish a release or move compatibility tags from a failing or partially validated commit.
 
 ## Debugging implementation failures
 
