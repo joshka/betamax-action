@@ -61,7 +61,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@46a3673d7a5dd7696b862848cb7e9902d797094d
+      - uses: joshka/betamax-action/report@v1
         with:
           workflow: betamax.yml
           mode: attachments

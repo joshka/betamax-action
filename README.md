@@ -13,8 +13,9 @@ rendering had write access. Rendering therefore runs in a read-only PR job witho
 Reporting runs separately on a fresh runner with trusted code and write access, without checking out
 or executing PR code.
 
-Both actions target GitHub.com and Ubuntu 24.04 GitHub-hosted runners, on x64 or ARM64. There is no
-stable `v1` tag yet; the examples pin a reviewed commit.
+Both actions target GitHub.com and Ubuntu 24.04 GitHub-hosted runners, on x64 or ARM64. Use `@v1`
+for compatible updates or `@v1.0.0` for this release. For an immutable dependency, pin both actions
+to the full commit SHA shown on the release page.
 
 - [Rendering inputs](#rendering-inputs) and [outputs](#rendering-outputs)
 - [Reporting inputs](#reporting-inputs) and [outputs](#reporting-outputs)
@@ -119,7 +120,7 @@ jobs:
         with:
           persist-credentials: false
       # Install your application's toolchain and build it here.
-      - uses: joshka/betamax-action@46a3673d7a5dd7696b862848cb7e9902d797094d
+      - uses: joshka/betamax-action@v1
         with:
           tapes: demos/**/*.tape
           formats: gif,png,webp
@@ -153,7 +154,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@46a3673d7a5dd7696b862848cb7e9902d797094d
+      - uses: joshka/betamax-action/report@v1
         with:
           workflow: betamax.yml
 ```
@@ -230,7 +231,7 @@ all jobs refreshes every preview together.
 `binary` selects an executable built or installed before the render step:
 
 ```yaml
-- uses: joshka/betamax-action@46a3673d7a5dd7696b862848cb7e9902d797094d
+- uses: joshka/betamax-action@v1
   with:
     binary: target/debug/betamax
     tapes: demos/**/*.tape
