@@ -27,11 +27,19 @@ const CHECKSUMS = {
     "ced28786becb89606d2912be7a8894abc006535e3f18050e29bc20ea0c30cd52",
 };
 
-export async function prepareBinary({ root, directory, binary, version, checksum, dependencies }) {
+export async function prepareBinary({
+  root,
+  directory,
+  binary,
+  version,
+  checksum,
+  dependencies,
+  info = () => {},
+}) {
   const executable = binary
     ? await localBinary(root, binary)
     : await installRelease(directory, version, checksum);
-  if (dependencies) await installDependencies(directory);
+  if (dependencies) await installDependencies(directory, info);
   return executable;
 }
 
@@ -74,7 +82,7 @@ async function installRelease(directory, version, checksum) {
   return binary;
 }
 
-async function installDependencies(directory) {
+async function installDependencies(directory, info) {
   await mkdir(directory, { recursive: true });
   for (const args of [
     ["apt-get", "update", "-qq"],
@@ -90,13 +98,15 @@ async function installDependencies(directory) {
       "fonts-noto-cjk",
     ],
   ]) {
-    const setup = await execute("sudo", ["-n", ...args], {
+    // sudo children are root-owned, so the runner cannot signal them; timeout runs as root.
+    info(`Running ${args.slice(0, 2).join(" ")}`);
+    const setup = await execute("sudo", ["-n", "timeout", "--kill-after=10", "290", ...args], {
       timeout: 300_000,
       log: path.join(directory, "dependencies.log"),
     });
     if (setup.code !== 0)
       throw new Error(
-        "Dependency installation failed; install dependencies in an earlier step and set install-dependencies: false",
+        `Dependency installation ${[124, 137].includes(setup.code) || setup.timedOut ? "timed out" : "failed"}; install dependencies in an earlier step and set install-dependencies: false`,
       );
   }
 }

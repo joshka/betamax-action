@@ -159,8 +159,9 @@ test("local binary still installs dependencies when requested", async (t) => {
     candidate,
   );
   const calls = (await readFile(setupLog, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(calls[0], ["-n", "apt-get", "update", "-qq"]);
-  assert.deepEqual(calls[1].slice(0, 5), ["-n", "apt-get", "install", "-y", "-qq"]);
+  const bounded = ["-n", "timeout", "--kill-after=10", "290"];
+  assert.deepEqual(calls[0], [...bounded, "apt-get", "update", "-qq"]);
+  assert.deepEqual(calls[1].slice(0, 8), [...bounded, "apt-get", "install", "-y", "-qq"]);
   assert.ok(calls[1].includes("ffmpeg"));
   assert.ok(calls[1].includes("fonts-dejavu-core"));
   assert.equal(fetch.mock.callCount(), 0);

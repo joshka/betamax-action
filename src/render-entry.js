@@ -7,6 +7,25 @@ import { identifier, integer, regularPath } from "./common.js";
 import { prepareBinary } from "./install.js";
 import { parseFormats, render } from "./render.js";
 
+const UPLOAD_TIMEOUT = 120_000;
+
+// The artifact client has no deadline of its own; a stalled upload must fail the step.
+async function upload(client, name, files, directory, options) {
+  core.info(`Uploading ${name}`);
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`Uploading ${name} exceeded ${UPLOAD_TIMEOUT / 1000}s`)),
+      UPLOAD_TIMEOUT,
+    );
+  });
+  try {
+    return await Promise.race([client.uploadArtifact(name, files, directory, options), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 try {
   if (["workflow_run", "pull_request_target"].includes(process.env.GITHUB_EVENT_NAME)) {
     throw new Error(
@@ -42,6 +61,7 @@ try {
       version: core.getInput("version") || "0.1.22",
       checksum: core.getInput("sha256"),
       dependencies: core.getBooleanInput("install-dependencies"),
+      info: core.info,
     });
     const result = await render({
       root,
@@ -52,9 +72,11 @@ try {
       timeout,
       extraOutputs: core.getInput("extra-outputs"),
       prefix,
+      info: core.info,
     });
     const client = new DefaultArtifactClient();
-    const gallery = await client.uploadArtifact(
+    const gallery = await upload(
+      client,
       path.basename(result.gallery),
       [result.gallery],
       directory,
@@ -64,7 +86,7 @@ try {
     core.setOutput("artifact-url", url);
     core.setOutput("artifact-id", gallery.id);
     for (const item of result.media) {
-      await client.uploadArtifact(item.name, [item.path], directory, {
+      await upload(client, item.name, [item.path], directory, {
         retentionDays,
         skipArchive: true,
       });
@@ -97,7 +119,7 @@ try {
         if (error.code !== "ENOENT") core.warning(`Could not collect setup logs: ${error.message}`);
       }
       if (logs.length) {
-        await new DefaultArtifactClient().uploadArtifact(`${prefix}-diagnostics`, logs, directory, {
+        await upload(new DefaultArtifactClient(), `${prefix}-diagnostics`, logs, directory, {
           retentionDays,
         });
       }

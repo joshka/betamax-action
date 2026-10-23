@@ -78,6 +78,32 @@ test("subprocess output cannot emit workflow commands; timeout bounds execution"
   assert.match(await readFile(log, "utf8"), /::error::fake/);
 });
 
+test("timeout settles when a descendant outlives the process group", async (t) => {
+  const root = await fixture(t);
+  const log = path.join(root, "out.log");
+  const started = Date.now();
+  const result = await execute(
+    process.execPath,
+    [
+      "-e",
+      `const c = require("node:child_process").spawn(process.execPath,
+        ["-e", "setTimeout(() => {}, 30000)"], { detached: true, stdio: "inherit" });
+      console.log(c.pid); setInterval(() => {}, 1000);`,
+    ],
+    { log, timeout: 150, grace: 200 },
+  );
+  const pid = Number((await readFile(log, "utf8")).trim());
+  t.after(() => {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // Already gone.
+    }
+  });
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - started < 5000);
+});
+
 test("failed tapes do not prevent later previews or the gallery", async (t) => {
   const root = await fixture(t);
   await writeFile(path.join(root, "a.tape"), "fail");

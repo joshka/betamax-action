@@ -73,6 +73,7 @@ export async function render({
   timeout,
   extraOutputs,
   prefix,
+  info = () => {},
 }) {
   await mkdir(directory, { recursive: true });
   const tapes = await discover(root, patterns);
@@ -104,6 +105,8 @@ export async function render({
 
   for (const [index, tape] of tapes.entries()) {
     const label = path.relative(root, tape);
+    info(`Rendering ${label} (${index + 1}/${tapes.length})`);
+    const started = Date.now();
     const tapeDir = path.join(directory, `tape-${index + 1}`);
     await mkdir(tapeDir);
     if ((await lstat(tape)).size > 1024 * 1024) throw new Error("Tape exceeds the 1 MiB limit");
@@ -129,6 +132,7 @@ export async function render({
     else if (outcome.signal) problems.push(`${label}: terminated by ${outcome.signal}`);
     else if (outcome.code !== 0) problems.push(`${label}: exited with code ${outcome.code}`);
     results.push({ tape: label, status });
+    info(`${label}: ${status} in ${((Date.now() - started) / 1000).toFixed(1)}s`);
     for (const format of formats) {
       const file = path.join(tapeDir, `preview.${format}`);
       try {
