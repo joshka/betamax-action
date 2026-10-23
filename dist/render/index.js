@@ -23201,7 +23201,7 @@ var require_package = __commonJS({
   "node_modules/@actions/artifact/package.json"(exports2, module) {
     module.exports = {
       name: "@actions/artifact",
-      version: "6.2.1",
+      version: "6.3.1",
       preview: true,
       description: "Actions artifact lib",
       keywords: [
@@ -23248,26 +23248,27 @@ var require_package = __commonJS({
         url: "https://github.com/actions/toolkit/issues"
       },
       dependencies: {
-        "@actions/core": "^3.0.0",
-        "@actions/github": "^9.0.0",
-        "@actions/http-client": "^4.0.0",
-        "@azure/storage-blob": "^12.30.0",
+        "@actions/core": "^3.0.1",
+        "@actions/github": "^9.1.1",
+        "@actions/http-client": "^4.0.1",
+        "@azure/storage-blob": "^12.31.0",
         "@octokit/core": "^7.0.6",
         "@octokit/plugin-request-log": "^6.0.0",
-        "@octokit/plugin-retry": "^8.0.0",
-        "@octokit/request": "^10.0.7",
+        "@octokit/plugin-retry": "^8.1.0",
+        "@octokit/request": "^10.0.8",
         "@octokit/request-error": "^7.1.0",
-        "@protobuf-ts/plugin": "^2.2.3-alpha.1",
-        "@protobuf-ts/runtime": "^2.9.4",
+        "@protobuf-ts/runtime": "^2.11.1",
+        "@protobuf-ts/runtime-rpc": "^2.11.1",
         archiver: "^7.0.1",
         "jwt-decode": "^4.0.0",
         "unzip-stream": "^0.3.1"
       },
       devDependencies: {
+        "@protobuf-ts/plugin": "^2.11.1",
         "@types/archiver": "^7.0.0",
         "@types/unzip-stream": "^0.3.4",
-        typedoc: "^0.28.16",
-        "typedoc-plugin-markdown": "^4.9.0",
+        typedoc: "^0.28.19",
+        "typedoc-plugin-markdown": "^4.11.0",
         typescript: "^5.9.3"
       },
       overrides: {
@@ -57639,8 +57640,9 @@ var __awaiter4 = function(thisArg, _arguments, P, generator) {
 var ArtifactHttpClient = class {
   constructor(userAgent2, maxAttempts, baseRetryIntervalMilliseconds, retryMultiplier) {
     this.maxAttempts = 5;
-    this.baseRetryIntervalMilliseconds = 3e3;
+    this.baseRetryIntervalMilliseconds = 8e3;
     this.retryMultiplier = 1.5;
+    this.retryTimeoutMilliseconds = 12e4;
     const token = getRuntimeToken();
     this.baseUrl = getResultsServiceUrl();
     if (maxAttempts) {
@@ -57680,11 +57682,16 @@ var ArtifactHttpClient = class {
       let attempt = 0;
       let errorMessage = "";
       let rawBody = "";
+      let totalRetryWaitMilliseconds = 0;
       while (attempt < this.maxAttempts) {
         let isRetryable = false;
+        let retryAfterSeconds;
         try {
           const response = yield operation();
           const statusCode = response.message.statusCode;
+          if (statusCode === HttpCodes.TooManyRequests) {
+            retryAfterSeconds = this.getRetryAfterSeconds(response);
+          }
           rawBody = yield response.readBody();
           debug(`[Response] - ${response.message.statusCode}`);
           debug(`Headers: ${JSON.stringify(response.message.headers, null, 2)}`);
@@ -57721,9 +57728,13 @@ var ArtifactHttpClient = class {
         if (attempt + 1 === this.maxAttempts) {
           throw new Error(`Failed to make request after ${this.maxAttempts} attempts: ${errorMessage}`);
         }
-        const retryTimeMilliseconds = this.getExponentialRetryTimeMilliseconds(attempt);
+        const retryTimeMilliseconds = retryAfterSeconds !== void 0 ? retryAfterSeconds * 1e3 : this.getExponentialRetryTimeMilliseconds(attempt);
+        if (totalRetryWaitMilliseconds + retryTimeMilliseconds > this.retryTimeoutMilliseconds) {
+          throw new Error(`Retry wait of ${retryTimeMilliseconds} ms would exceed the maximum total retry wait of ${this.retryTimeoutMilliseconds} ms: ${errorMessage}`);
+        }
         info(`Attempt ${attempt + 1} of ${this.maxAttempts} failed with error: ${errorMessage}. Retrying request in ${retryTimeMilliseconds} ms...`);
         yield this.sleep(retryTimeMilliseconds);
+        totalRetryWaitMilliseconds += retryTimeMilliseconds;
         attempt++;
       }
       throw new Error(`Request failed`);
@@ -57745,6 +57756,17 @@ var ArtifactHttpClient = class {
       HttpCodes.TooManyRequests
     ];
     return retryableStatusCodes.includes(statusCode);
+  }
+  // Only positive integer seconds are supported, not HTTP-date values.
+  getRetryAfterSeconds(response) {
+    var _a2;
+    const header = response.message.headers["retry-after"];
+    const value = (_a2 = Array.isArray(header) ? header[0] : header) === null || _a2 === void 0 ? void 0 : _a2.trim();
+    if (value === void 0 || !/^\d+$/.test(value)) {
+      return void 0;
+    }
+    const parsed = parseInt(value, 10);
+    return !isNaN(parsed) && parsed > 0 ? parsed : void 0;
   }
   sleep(milliseconds) {
     return __awaiter4(this, void 0, void 0, function* () {
@@ -98627,12 +98649,13 @@ import path5 from "node:path";
 // src/process.js
 import { spawn } from "node:child_process";
 import { createWriteStream as createWriteStream2 } from "node:fs";
-function execute(program, args, { cwd, input, log: log2, timeout = 12e4, env = process.env } = {}) {
+function execute(program, args, { cwd, input, log: log2, timeout = 12e4, grace = 5e3, env = process.env } = {}) {
   return new Promise((resolve2, reject) => {
-    const stream4 = log2 ? createWriteStream2(log2) : null;
+    const stream4 = log2 ? createWriteStream2(log2, { flags: "a" }) : null;
     stream4?.on("error", reject);
     let retained = 0;
     let timedOut = false;
+    let abandon;
     const child = spawn(program, args, {
       cwd,
       env,
@@ -98655,17 +98678,31 @@ function execute(program, args, { cwd, input, log: log2, timeout = 12e4, env = p
         process.kill(-child.pid, "SIGKILL");
       } catch {
       }
+      abandon = setTimeout(() => {
+        child.stdout.destroy();
+        child.stderr.destroy();
+        child.unref();
+        finish(null, "SIGKILL");
+      }, grace);
     }, timeout);
-    child.once("error", (error2) => {
+    let settled = false;
+    const finish = (code, signal) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
+      clearTimeout(abandon);
+      if (stream4) stream4.end(() => resolve2({ code, signal, timedOut }));
+      else resolve2({ code, signal, timedOut });
+    };
+    child.once("error", (error2) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearTimeout(abandon);
       stream4?.end();
       reject(error2);
     });
-    child.once("close", (code, signal) => {
-      clearTimeout(timer);
-      if (stream4) stream4.end(() => resolve2({ code, signal, timedOut }));
-      else resolve2({ code, signal, timedOut });
-    });
+    child.once("close", finish);
   });
 }
 
@@ -98682,9 +98719,18 @@ var CHECKSUMS = {
   "0.1.17-x86_64-unknown-linux-gnu": "dc41ea5d5f572d2abf10913461734383f00080a67e123c036a6fd497e34c0773",
   "0.1.17-aarch64-unknown-linux-gnu": "ced28786becb89606d2912be7a8894abc006535e3f18050e29bc20ea0c30cd52"
 };
-async function prepareBinary({ root, directory, binary, version: version3, checksum, dependencies }) {
+async function prepareBinary({
+  root,
+  directory,
+  binary,
+  version: version3,
+  checksum,
+  dependencies,
+  info: info2 = () => {
+  }
+}) {
   const executable = binary ? await localBinary(root, binary) : await installRelease(directory, version3, checksum);
-  if (dependencies) await installDependencies(directory);
+  if (dependencies) await installDependencies(directory, info2);
   return executable;
 }
 async function localBinary(root, candidate) {
@@ -98724,15 +98770,15 @@ async function installRelease(directory, version3, checksum) {
   await chmod2(binary, 493);
   return binary;
 }
-async function installDependencies(directory) {
+async function installDependencies(directory, info2) {
   await mkdir2(directory, { recursive: true });
   for (const args of [
-    ["apt-get", "update", "-qq"],
+    ["apt-get", "update", "-q"],
     [
       "apt-get",
       "install",
       "-y",
-      "-qq",
+      "-q",
       "ffmpeg",
       "fonts-dejavu-core",
       "fonts-jetbrains-mono",
@@ -98740,13 +98786,14 @@ async function installDependencies(directory) {
       "fonts-noto-cjk"
     ]
   ]) {
-    const setup = await execute("sudo", ["-n", ...args], {
+    info2(`Running ${args.slice(0, 2).join(" ")}`);
+    const setup = await execute("sudo", ["-n", "timeout", "--kill-after=10", "290", ...args], {
       timeout: 3e5,
       log: path5.join(directory, "dependencies.log")
     });
     if (setup.code !== 0)
       throw new Error(
-        "Dependency installation failed; install dependencies in an earlier step and set install-dependencies: false"
+        `Dependency installation ${[124, 137].includes(setup.code) || setup.timedOut ? "timed out" : "failed"}; install dependencies in an earlier step and set install-dependencies: false`
       );
   }
 }
@@ -101365,7 +101412,9 @@ async function render({
   formats,
   timeout,
   extraOutputs,
-  prefix: prefix2
+  prefix: prefix2,
+  info: info2 = () => {
+  }
 }) {
   await mkdir3(directory, { recursive: true });
   const tapes = await discover(root, patterns);
@@ -101395,6 +101444,8 @@ async function render({
   };
   for (const [index, tape] of tapes.entries()) {
     const label = path11.relative(root, tape);
+    info2(`Rendering ${label} (${index + 1}/${tapes.length})`);
+    const started = Date.now();
     const tapeDir = path11.join(directory, `tape-${index + 1}`);
     await mkdir3(tapeDir);
     if ((await lstat3(tape)).size > 1024 * 1024) throw new Error("Tape exceeds the 1 MiB limit");
@@ -101422,6 +101473,7 @@ ${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}
     else if (outcome.signal) problems.push(`${label}: terminated by ${outcome.signal}`);
     else if (outcome.code !== 0) problems.push(`${label}: exited with code ${outcome.code}`);
     results.push({ tape: label, status });
+    info2(`${label}: ${status} in ${((Date.now() - started) / 1e3).toFixed(1)}s`);
     for (const format of formats) {
       const file = path11.join(tapeDir, `preview.${format}`);
       try {
@@ -101479,6 +101531,22 @@ img,video{display:block;max-width:100%;height:auto}figcaption{margin-top:12px}
 }
 
 // src/render-entry.js
+var UPLOAD_TIMEOUT = 12e4;
+async function upload(client2, name, files, directory, options) {
+  info(`Uploading ${name}`);
+  let timer;
+  const deadline = new Promise((_2, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`Uploading ${name} exceeded ${UPLOAD_TIMEOUT / 1e3}s`)),
+      UPLOAD_TIMEOUT
+    );
+  });
+  try {
+    return await Promise.race([client2.uploadArtifact(name, files, directory, options), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 try {
   if (["workflow_run", "pull_request_target"].includes(process.env.GITHUB_EVENT_NAME)) {
     throw new Error(
@@ -101510,7 +101578,8 @@ try {
       binary: suppliedBinary,
       version: getInput("version") || "0.1.22",
       checksum: getInput("sha256"),
-      dependencies: getBooleanInput("install-dependencies")
+      dependencies: getBooleanInput("install-dependencies"),
+      info
     });
     const result = await render({
       root,
@@ -101520,10 +101589,12 @@ try {
       formats,
       timeout,
       extraOutputs: getInput("extra-outputs"),
-      prefix: prefix2
+      prefix: prefix2,
+      info
     });
     const client2 = new DefaultArtifactClient();
-    const gallery = await client2.uploadArtifact(
+    const gallery = await upload(
+      client2,
       path12.basename(result.gallery),
       [result.gallery],
       directory,
@@ -101533,7 +101604,7 @@ try {
     setOutput("artifact-url", url2);
     setOutput("artifact-id", gallery.id);
     for (const item of result.media) {
-      await client2.uploadArtifact(item.name, [item.path], directory, {
+      await upload(client2, item.name, [item.path], directory, {
         retentionDays,
         skipArchive: true
       });
@@ -101561,7 +101632,7 @@ ${passed}/${result.results.length} tapes passed. Artifacts require GitHub sign-i
         if (error2.code !== "ENOENT") warning(`Could not collect setup logs: ${error2.message}`);
       }
       if (logs.length) {
-        await new DefaultArtifactClient().uploadArtifact(`${prefix2}-diagnostics`, logs, directory, {
+        await upload(new DefaultArtifactClient(), `${prefix2}-diagnostics`, logs, directory, {
           retentionDays
         });
       }
