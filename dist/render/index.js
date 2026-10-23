@@ -98773,12 +98773,12 @@ async function installRelease(directory, version3, checksum) {
 async function installDependencies(directory, info2) {
   await mkdir2(directory, { recursive: true });
   for (const args of [
-    ["apt-get", "update", "-qq"],
+    ["apt-get", "update", "-q"],
     [
       "apt-get",
       "install",
       "-y",
-      "-qq",
+      "-q",
       "ffmpeg",
       "fonts-dejavu-core",
       "fonts-jetbrains-mono",
