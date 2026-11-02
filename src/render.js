@@ -1,4 +1,4 @@
-import * as glob from "@actions/glob";
+import { Ignore, globIterate } from "glob";
 import { mkdir, readFile, writeFile, lstat } from "node:fs/promises";
 import path from "node:path";
 import { MAX_MEDIA, MAX_TOTAL_BYTES, html, readMedia, regularPath } from "./common.js";
@@ -12,27 +12,31 @@ export async function discover(root, patterns, excludeBuild = true) {
     .map((p) => p.trim())
     .filter(Boolean);
   if (!inputs.length) return [];
-  const absolutePatterns = inputs.map((pattern) => {
+  const include = [];
+  const exclude = [];
+  for (const pattern of inputs) {
     const negative = pattern.startsWith("!");
     const value = negative ? pattern.slice(1) : pattern;
     if (path.isAbsolute(value) || value.split(/[\\/]/).includes(".."))
       throw new Error("Globs must stay inside working-directory");
-    return `${negative ? "!" : ""}${path.join(root, value)}`;
-  });
-  const matcher = await glob.create(absolutePatterns.join("\n"), {
-    followSymbolicLinks: false,
-    matchDirectories: false,
-    implicitDescendants: false,
-  });
+    (negative ? exclude : include).push(path.posix.normalize(value.replaceAll("\\", "/")));
+  }
+  if (!include.length) return [];
+  const skipped = (name) =>
+    name === ".git" || name === ".jj" || (excludeBuild && EXCLUDED.has(name));
+  const options = { cwd: root, absolute: true, dot: true, follow: false, nodir: true };
+  // Negations apply to every positive pattern regardless of order.
+  const negated = new Ignore(exclude, options);
   const files = [];
-  for await (const file of matcher.globGenerator()) {
-    const parts = path.relative(root, file).split(path.sep);
-    if (
-      parts.some(
-        (part) => part === ".git" || part === ".jj" || (excludeBuild && EXCLUDED.has(part)),
-      )
-    )
-      continue;
+  for await (const file of globIterate(include, {
+    ...options,
+    ignore: {
+      ignored: (entry) => negated.ignored(entry),
+      childrenIgnored: (entry) =>
+        entry.isSymbolicLink() || skipped(entry.name) || negated.childrenIgnored(entry),
+    },
+  })) {
+    if (path.relative(root, file).split(path.sep).some(skipped)) continue;
     files.push(await regularPath(root, file));
   }
   return [...new Set(files)].sort();
