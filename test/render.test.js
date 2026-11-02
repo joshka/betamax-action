@@ -29,6 +29,34 @@ test("discovery deduplicates paths, respects exclusions and ignores build direct
   await assert.rejects(discover(root, "../*.tape"), /inside/);
 });
 
+test("discovery matches dotfiles, applies negations in any order and skips directories", async (t) => {
+  const root = await fixture(t);
+  for (const dir of ["tapes/.hidden", "tapes/dir.tape", ".jj"])
+    await mkdir(path.join(root, dir), { recursive: true });
+  for (const file of ["tapes/a.tape", "tapes/.dot.tape", "tapes/.hidden/h.tape", ".jj/j.tape"])
+    await writeFile(path.join(root, file), "Sleep 1ms");
+  assert.deepEqual(await discover(root, "!tapes/a.tape\n**/*.tape"), [
+    path.join(root, "tapes/.dot.tape"),
+    path.join(root, "tapes/.hidden/h.tape"),
+  ]);
+  assert.deepEqual(await discover(root, "./tapes/*.tape\n!**/.*"), [
+    path.join(root, "tapes/a.tape"),
+  ]);
+  assert.deepEqual(await discover(root, "!**/*.tape"), []);
+});
+
+test("discovery rejects symlinked tapes and does not follow symlinked directories", async (t) => {
+  const root = await fixture(t);
+  await mkdir(path.join(root, "tapes"));
+  await mkdir(path.join(root, "outside"));
+  await writeFile(path.join(root, "outside/o.tape"), "Sleep 1ms");
+  await symlink(path.join(root, "outside"), path.join(root, "tapes/linked"));
+  assert.deepEqual(await discover(root, "tapes/**/*.tape"), []);
+  await writeFile(path.join(root, "tapes/a.tape"), "Sleep 1ms");
+  await symlink(path.join(root, "tapes/a.tape"), path.join(root, "tapes/b.tape"));
+  await assert.rejects(discover(root, "tapes/*.tape"), /Symbolic/);
+});
+
 test("collection refuses symlinks, directories and escapes", async (t) => {
   const root = await fixture(t);
   await writeFile(path.join(root, "a.png"), "data");
