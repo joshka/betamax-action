@@ -254,11 +254,13 @@ Betamax bundles JetBrains Mono, its default font. For symbol and CJK fallback, t
 DejaVu, Noto and Noto Sans CJK fonts (about 50 MB, a few seconds) into `~/.local/share/fonts`,
 checking each download against a pinned SHA-256. Noto Sans CJK comes from
 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk); DejaVu and Noto are Debian's packages
-of the versions Ubuntu 24.04 ships, unpacked without root. These downloads skip apt because Ubuntu's
-package archives can take minutes to serve them. apt is used only for ffmpeg, when `formats`
-includes `mp4` or `webm`; on GitHub-hosted runners it is pointed at `archive.ubuntu.com` instead of
-the runner's regional mirror. A tape that writes video through its own `Output` line still needs one
-of those formats, or ffmpeg from an earlier step. The action does not cache installations.
+of the versions Ubuntu 24.04 ships, unpacked without root. When `formats` includes `mp4` or `webm`,
+the action also downloads a pinned, checksum-verified static ffmpeg 8.1 build (about 150 MB) from
+[FFmpeg-Builds](https://github.com/FFmpeg-Builds/FFmpeg-Builds) and puts `ffmpeg` and `ffprobe` on
+`PATH` for the rest of the job. Nothing comes from apt, because Ubuntu's package archives on hosted
+runners can take minutes to serve packages or stall. A tape that writes video through its own
+`Output` line still needs one of those formats, or ffmpeg from an earlier step. The action does not
+cache installations.
 
 To choose fonts, install them before the action and set `Set FontFamily` in the tape. Runner images
 can still produce different rendering results. Set `install-dependencies: false` if earlier steps

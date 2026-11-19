@@ -62,6 +62,8 @@ try {
       checksum: core.getInput("sha256"),
       dependencies: core.getBooleanInput("install-dependencies"),
       formats,
+      // Later steps, such as media checks, find the downloaded ffmpeg and ffprobe too.
+      addPath: core.addPath,
       info: core.info,
     });
     const result = await render({

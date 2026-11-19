@@ -27,7 +27,8 @@ inputs:
       Required archive checksum for versions without a bundled checksum; ignored when binary is set
   install-dependencies:
     description:
-      Install ffmpeg and fonts with apt in either binary mode; disable when already provided
+      Download fallback fonts, and ffmpeg for video formats, in either binary mode; disable when
+      already provided
     default: "true"
   timeout-seconds:
     description: Maximum execution time per tape
