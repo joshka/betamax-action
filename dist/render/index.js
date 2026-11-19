@@ -29614,8 +29614,8 @@ var require_graceful_fs = __commonJS({
       fs10.createReadStream = createReadStream2;
       fs10.createWriteStream = createWriteStream3;
       var fs$readFile = fs10.readFile;
-      fs10.readFile = readFile3;
-      function readFile3(path8, options, cb) {
+      fs10.readFile = readFile4;
+      function readFile4(path8, options, cb) {
         if (typeof options === "function")
           cb = options, options = null;
         return go$readFile(path8, options, cb);
@@ -43398,7 +43398,7 @@ var require_index_min = __commonJS({
     exports2.globStream = ns2;
     exports2.globSync = hs2;
     exports2.globIterateSync = Pt2;
-    exports2.globIterate = os9;
+    exports2.globIterate = os10;
     var ci2 = Y2();
     var rt2 = is2();
     var rn2 = rs2();
@@ -43436,15 +43436,15 @@ var require_index_min = __commonJS({
     function Pt2(n, t = {}) {
       return new rt2.Glob(n, t).iterateSync();
     }
-    function os9(n, t = {}) {
+    function os10(n, t = {}) {
       return new rt2.Glob(n, t).iterate();
     }
     exports2.streamSync = Rt2;
     exports2.stream = Object.assign(ns2, { sync: Rt2 });
     exports2.iterateSync = Pt2;
-    exports2.iterate = Object.assign(os9, { sync: Pt2 });
+    exports2.iterate = Object.assign(os10, { sync: Pt2 });
     exports2.sync = Object.assign(hs2, { stream: Rt2, iterate: Pt2 });
-    exports2.glob = Object.assign(ui2, { glob: ui2, globSync: hs2, sync: exports2.sync, globStream: ns2, stream: exports2.stream, globStreamSync: Rt2, streamSync: exports2.streamSync, globIterate: os9, iterate: exports2.iterate, globIterateSync: Pt2, iterateSync: exports2.iterateSync, Glob: rt2.Glob, hasMagic: rn2.hasMagic, escape: ci2.escape, unescape: ci2.unescape });
+    exports2.glob = Object.assign(ui2, { glob: ui2, globSync: hs2, sync: exports2.sync, globStream: ns2, stream: exports2.stream, globStreamSync: Rt2, streamSync: exports2.streamSync, globIterate: os10, iterate: exports2.iterate, globIterateSync: Pt2, iterateSync: exports2.iterateSync, Glob: rt2.Glob, hasMagic: rn2.hasMagic, escape: ci2.escape, unescape: ci2.unescape });
     exports2.glob.glob = exports2.glob;
   }
 });
@@ -96551,7 +96551,7 @@ var client = new DefaultArtifactClient();
 // src/render-entry.js
 import { mkdtemp, readdir as readdir2 } from "node:fs/promises";
 import path7 from "node:path";
-import os8 from "node:os";
+import os9 from "node:os";
 
 // src/common.js
 import { createHash as createHash3 } from "node:crypto";
@@ -96630,7 +96630,8 @@ async function readMedia(root, file) {
 }
 
 // src/install.js
-import { access as access3, chmod as chmod2, mkdir as mkdir2, writeFile as writeFile2 } from "node:fs/promises";
+import { access as access3, chmod as chmod2, mkdir as mkdir2, readFile as readFile2, writeFile as writeFile2 } from "node:fs/promises";
+import os7 from "node:os";
 import { constants as constants3 } from "node:fs";
 import path5 from "node:path";
 
@@ -96717,11 +96718,16 @@ async function prepareBinary({
   checksum,
   dependencies,
   formats = [],
+  fonts = CJK_FONTS,
+  fontDirectory = path5.join(os7.homedir(), ".local/share/fonts/betamax-noto-cjk"),
   info: info2 = () => {
   }
 }) {
   const executable = binary ? await localBinary(root, binary) : await installRelease(directory, version3, checksum);
-  if (dependencies) await installDependencies(directory, formats, info2);
+  if (dependencies) {
+    await installDependencies(directory, formats, info2);
+    await installFonts(fontDirectory, fonts, info2);
+  }
   return executable;
 }
 async function localBinary(root, candidate) {
@@ -96762,8 +96768,36 @@ async function installRelease(directory, version3, checksum) {
   return binary;
 }
 function dependencyPackages(formats) {
-  const packages = ["fonts-dejavu-core", "fonts-noto-core", "fonts-noto-cjk"];
+  const packages = ["fonts-dejavu-core", "fonts-noto-core"];
   return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg", ...packages] : packages;
+}
+var CJK_FONTS = Object.fromEntries(
+  [
+    ["NotoSansCJK-Regular.ttc", "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"],
+    ["NotoSansCJK-Bold.ttc", "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"]
+  ].map(([name, sha256]) => [
+    name,
+    {
+      url: `https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/${name}`,
+      sha256
+    }
+  ])
+);
+async function installFonts(directory, fonts, info2) {
+  await mkdir2(directory, { recursive: true });
+  for (const [name, { url: url2, sha256 }] of Object.entries(fonts)) {
+    const target = path5.join(directory, name);
+    try {
+      if (digest(await readFile2(target)) === sha256) continue;
+    } catch {
+    }
+    info2(`Downloading ${name}`);
+    const response = await fetch(url2, { signal: AbortSignal.timeout(12e4) });
+    if (!response.ok) throw new Error(`Font download failed for ${name} (HTTP ${response.status})`);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (digest(bytes) !== sha256) throw new Error(`Font checksum mismatch for ${name}`);
+    await writeFile2(target, bytes);
+  }
 }
 var RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
 async function preferGlobalArchive(directory) {
@@ -98581,7 +98615,7 @@ var wt = class rs {
     }
   }
 };
-var os7 = typeof process == "object" && process ? process : { stdout: null, stderr: null };
+var os8 = typeof process == "object" && process ? process : { stdout: null, stderr: null };
 var ki = (r7) => !!r7 && typeof r7 == "object" && (r7 instanceof Z || r7 instanceof cs || Ci(r7) || Ai(r7));
 var Ci = (r7) => !!r7 && typeof r7 == "object" && r7 instanceof Ce && typeof r7.pipe == "function" && r7.pipe !== cs.Writable.prototype.pipe;
 var Ai = (r7) => !!r7 && typeof r7 == "object" && r7 instanceof Ce && typeof r7.write == "function" && typeof r7.end == "function";
@@ -98777,7 +98811,7 @@ var Z = class extends Ce {
     if (this[E]) return t;
     this[_2] = false;
     let s = this[Y];
-    return e = e || {}, t === os7.stdout || t === os7.stderr ? e.end = false : e.end = e.end !== false, e.proxyErrors = !!e.proxyErrors, s ? e.end && t.end() : (this[T].push(e.proxyErrors ? new ke(this, t, e) : new Bt(this, t, e)), this[$] ? vt(() => this[nt]()) : this[nt]()), t;
+    return e = e || {}, t === os8.stdout || t === os8.stderr ? e.end = false : e.end = e.end !== false, e.proxyErrors = !!e.proxyErrors, s ? e.end && t.end() : (this[T].push(e.proxyErrors ? new ke(this, t, e) : new Bt(this, t, e)), this[$] ? vt(() => this[nt]()) : this[nt]()), t;
   }
   unpipe(t) {
     let e = this[T].find((s) => s.dest === t);
@@ -100272,7 +100306,7 @@ var Cs = Object.assign(ks, { glob: ks, globSync: Rs, sync: un, globStream: As, s
 Cs.glob = Cs;
 
 // src/render.js
-import { mkdir as mkdir3, readFile as readFile2, writeFile as writeFile3, lstat as lstat3 } from "node:fs/promises";
+import { mkdir as mkdir3, readFile as readFile3, writeFile as writeFile3, lstat as lstat3 } from "node:fs/promises";
 import path6 from "node:path";
 var EXCLUDED = /* @__PURE__ */ new Set([".git", ".jj", "node_modules", "target", "dist", "vendor", ".artifacts"]);
 async function discover(root, patterns, excludeBuild = true) {
@@ -100362,7 +100396,7 @@ async function render({
     if ((await lstat3(tape)).size > 1024 * 1024) throw new Error("Tape exceeds the 1 MiB limit");
     const requested = [...new Set(formats)];
     const outputs = requested.map((format) => path6.join(tapeDir, `preview.${format}`));
-    const source = await readFile2(tape, "utf8");
+    const source = await readFile3(tape, "utf8");
     const augmented = `${source}
 ${outputs.map((file) => `Output ${JSON.stringify(file)}`).join("\n")}
 `;
@@ -100468,7 +100502,7 @@ try {
   const variant = identifier(getInput("variant") || "default", "variant");
   const attempt = integer(process.env.GITHUB_RUN_ATTEMPT || "1", "run attempt", 1, 1e4);
   const prefix2 = `betamax-${key}-${variant}-r${attempt}`;
-  const directory = await mkdtemp(path7.join(process.env.RUNNER_TEMP || os8.tmpdir(), "betamax-"));
+  const directory = await mkdtemp(path7.join(process.env.RUNNER_TEMP || os9.tmpdir(), "betamax-"));
   const root = await regularPath(
     process.env.GITHUB_WORKSPACE,
     getInput("working-directory") || ".",
