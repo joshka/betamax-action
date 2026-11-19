@@ -13,8 +13,8 @@ rendering had write access. Rendering therefore runs in a read-only PR job witho
 Reporting runs separately on a fresh runner with trusted code and write access, without checking out
 or executing PR code.
 
-Both actions target GitHub.com and Ubuntu 24.04 GitHub-hosted runners, on x64 or ARM64. Use `@v1`
-for compatible updates or `@v1.0.0` for this release. For an immutable dependency, pin both actions
+Both actions target GitHub.com and Ubuntu 24.04 GitHub-hosted runners, on x64 or ARM64. Use `@v2`
+for compatible updates or `@v2.0.0` for this release. For an immutable dependency, pin both actions
 to the full commit SHA shown on the release page.
 
 - [Rendering inputs](#rendering-inputs) and [outputs](#rendering-outputs)
@@ -120,7 +120,7 @@ jobs:
         with:
           persist-credentials: false
       # Install your application's toolchain and build it here.
-      - uses: joshka/betamax-action@v1
+      - uses: joshka/betamax-action@v2
         with:
           tapes: demos/**/*.tape
           formats: gif,png,webp
@@ -154,7 +154,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: joshka/betamax-action/report@v1
+      - uses: joshka/betamax-action/report@v2
         with:
           workflow: betamax.yml
 ```
@@ -231,7 +231,7 @@ all jobs refreshes every preview together.
 `binary` selects an executable built or installed before the render step:
 
 ```yaml
-- uses: joshka/betamax-action@v1
+- uses: joshka/betamax-action@v2
   with:
     binary: target/debug/betamax
     tapes: demos/**/*.tape
@@ -255,7 +255,7 @@ DejaVu, Noto and Noto Sans CJK fonts (about 50 MB, a few seconds) into `~/.local
 checking each download against a pinned SHA-256. Noto Sans CJK comes from
 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk); DejaVu and Noto are Debian's packages
 of the versions Ubuntu 24.04 ships, unpacked without root. When `formats` includes `mp4` or `webm`,
-the action also downloads a pinned, checksum-verified static ffmpeg 8.1 build (about 150 MB) from
+the action also downloads a pinned, checksum-verified static ffmpeg 9.0 build (about 150 MB) from
 [FFmpeg-Builds](https://github.com/FFmpeg-Builds/FFmpeg-Builds) and puts `ffmpeg` and `ffprobe` on
 `PATH` for the rest of the job. Nothing comes from apt, because Ubuntu's package archives on hosted
 runners can take minutes to serve packages or stall. A tape that writes video through its own
