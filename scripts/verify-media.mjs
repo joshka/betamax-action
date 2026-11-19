@@ -58,6 +58,23 @@ for (const file of files) {
     execFileSync("python3", ["scripts/verify-webp.py", fullPath, JSON.stringify(durations)], {
       stdio: "inherit",
     });
+  } else if (extension === "gif") {
+    // Image-only runs install no ffmpeg, so read GIF timing with Pillow, like the WebP check.
+    const [width, height, milliseconds] = JSON.parse(
+      execFileSync(
+        "python3",
+        [
+          "-c",
+          "import json, sys\nfrom PIL import Image, ImageSequence\nimage = Image.open(sys.argv[1])\nprint(json.dumps([*image.size, sum(frame.info.get('duration', 0) for frame in ImageSequence.Iterator(image))]))",
+          fullPath,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
+    assert.ok(milliseconds >= 2400, `${file} plays too quickly`);
+    assert.ok(milliseconds <= 2700, `${file} unexpectedly long`);
+    assert.equal(width, 780);
+    assert.equal(height, 350);
   } else if (extension !== "png") {
     const metadata = JSON.parse(
       execFileSync(

@@ -13,7 +13,7 @@ import {
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { prepareBinary } from "../src/install.js";
+import { dependencyPackages, prepareBinary } from "../src/install.js";
 import { render } from "../src/render.js";
 import { digest } from "../src/common.js";
 
@@ -148,23 +148,39 @@ test("local binary still installs dependencies when requested", async (t) => {
   const candidate = path.join(root, "cli");
   await writeFile(candidate, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   const setupLog = await interceptSetup(t, root);
-  const fetch = forbidDownloads(t);
-  assert.equal(
-    await prepareBinary({
-      root,
-      directory: path.join(root, "installation"),
-      binary: "cli",
-      dependencies: true,
-    }),
-    candidate,
-  );
-  const calls = (await readFile(setupLog, "utf8")).trim().split("\n").map(JSON.parse);
+  const font = Buffer.from("font bytes");
+  const fetch = t.mock.method(globalThis, "fetch", async (url) => {
+    assert.equal(url, "https://fonts.example/Test.ttc");
+    return new Response(font);
+  });
+  const fontDirectory = path.join(root, "fonts");
+  const fonts = { "Test.ttc": { url: "https://fonts.example/Test.ttc", sha256: digest(font) } };
+  const options = {
+    root,
+    directory: path.join(root, "installation"),
+    binary: "cli",
+    dependencies: true,
+    fonts,
+    fontDirectory,
+  };
+  assert.equal(await prepareBinary(options), candidate);
+  // GitHub-hosted runners also get a mirror rewrite first; check only the apt calls.
+  const calls = (await readFile(setupLog, "utf8"))
+    .trim()
+    .split("\n")
+    .map(JSON.parse)
+    .filter((call) => call.includes("apt-get"));
   const bounded = ["-n", "timeout", "--kill-after=10", "290"];
   assert.deepEqual(calls[0], [...bounded, "apt-get", "update", "-q"]);
   assert.deepEqual(calls[1].slice(0, 8), [...bounded, "apt-get", "install", "-y", "-q"]);
-  assert.ok(calls[1].includes("ffmpeg"));
+  assert.ok(!calls[1].includes("ffmpeg"));
   assert.ok(calls[1].includes("fonts-dejavu-core"));
-  assert.equal(fetch.mock.callCount(), 0);
+  assert.ok(!calls[1].includes("fonts-noto-cjk"));
+  assert.deepEqual(await readFile(path.join(fontDirectory, "Test.ttc")), font);
+  assert.equal(fetch.mock.callCount(), 1);
+  // A verified font already in place is not downloaded again.
+  await prepareBinary(options);
+  assert.equal(fetch.mock.callCount(), 1);
 });
 
 test(
@@ -201,3 +217,28 @@ test(
     );
   },
 );
+
+test("ffmpeg is installed only for video formats", () => {
+  assert.ok(!dependencyPackages(["gif", "png", "webp"]).includes("ffmpeg"));
+  assert.ok(dependencyPackages(["png", "mp4"]).includes("ffmpeg"));
+  assert.ok(dependencyPackages(["webm"]).includes("ffmpeg"));
+  assert.ok(!dependencyPackages(["gif"]).includes("fonts-jetbrains-mono"));
+});
+
+test("a font with the wrong checksum is rejected", async (t) => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, "cli"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  await interceptSetup(t, root);
+  t.mock.method(globalThis, "fetch", async () => new Response("tampered"));
+  await assert.rejects(
+    prepareBinary({
+      root,
+      directory: path.join(root, "installation"),
+      binary: "cli",
+      dependencies: true,
+      fonts: { "Test.ttc": { url: "https://fonts.example/Test.ttc", sha256: "0".repeat(64) } },
+      fontDirectory: path.join(root, "fonts"),
+    }),
+    /Font checksum mismatch for Test.ttc/,
+  );
+});

@@ -1,4 +1,5 @@
-import { access, chmod, mkdir, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
 import { constants } from "node:fs";
 import path from "node:path";
 import { digest, regularPath } from "./common.js";
@@ -38,12 +39,18 @@ export async function prepareBinary({
   version,
   checksum,
   dependencies,
+  formats = [],
+  fonts = CJK_FONTS,
+  fontDirectory = path.join(os.homedir(), ".local/share/fonts/betamax-noto-cjk"),
   info = () => {},
 }) {
   const executable = binary
     ? await localBinary(root, binary)
     : await installRelease(directory, version, checksum);
-  if (dependencies) await installDependencies(directory, info);
+  if (dependencies) {
+    await installDependencies(directory, formats, info);
+    await installFonts(fontDirectory, fonts, info);
+  }
   return executable;
 }
 
@@ -86,21 +93,72 @@ async function installRelease(directory, version, checksum) {
   return binary;
 }
 
-async function installDependencies(directory, info) {
+// Betamax bundles JetBrains Mono and writes GIF, PNG and WebP itself; only MP4 and WebM need
+// ffmpeg, which is most of the download.
+export function dependencyPackages(formats) {
+  const packages = ["fonts-dejavu-core", "fonts-noto-core"];
+  return formats.some((format) => ["mp4", "webm"].includes(format))
+    ? ["ffmpeg", ...packages]
+    : packages;
+}
+
+// Noto Sans CJK, which also contains Noto Sans Mono CJK, comes from GitHub rather than apt: the
+// fonts-noto-cjk package is about 61 MB and Ubuntu's archives can take minutes to serve it. These
+// are the upstream files at the Sans2.004 tag; fontdb and fontconfig both scan ~/.local/share/fonts.
+const CJK_FONTS = Object.fromEntries(
+  [
+    ["NotoSansCJK-Regular.ttc", "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"],
+    ["NotoSansCJK-Bold.ttc", "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"],
+  ].map(([name, sha256]) => [
+    name,
+    {
+      url: `https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/${name}`,
+      sha256,
+    },
+  ]),
+);
+
+async function installFonts(directory, fonts, info) {
   await mkdir(directory, { recursive: true });
+  for (const [name, { url, sha256 }] of Object.entries(fonts)) {
+    const target = path.join(directory, name);
+    try {
+      if (digest(await readFile(target)) === sha256) continue;
+    } catch {
+      // Not installed yet.
+    }
+    info(`Downloading ${name}`);
+    const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+    if (!response.ok) throw new Error(`Font download failed for ${name} (HTTP ${response.status})`);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (digest(bytes) !== sha256) throw new Error(`Font checksum mismatch for ${name}`);
+    await writeFile(target, bytes);
+  }
+}
+
+// GitHub-hosted runners resolve Ubuntu packages through a regional mirror that sometimes serves
+// them at a few KB/s without failing, so apt never fails over (actions/runner-images#14823).
+const RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
+
+async function preferGlobalArchive(directory) {
+  try {
+    await access(RUNNER_MIRRORS);
+  } catch {
+    return;
+  }
+  await execute("sudo", ["-n", "tee", RUNNER_MIRRORS], {
+    input: "http://archive.ubuntu.com/ubuntu/\n",
+    timeout: 10_000,
+    log: path.join(directory, "dependencies.log"),
+  });
+}
+
+async function installDependencies(directory, formats, info) {
+  await mkdir(directory, { recursive: true });
+  await preferGlobalArchive(directory);
   for (const args of [
     ["apt-get", "update", "-q"],
-    [
-      "apt-get",
-      "install",
-      "-y",
-      "-q",
-      "ffmpeg",
-      "fonts-dejavu-core",
-      "fonts-jetbrains-mono",
-      "fonts-noto-core",
-      "fonts-noto-cjk",
-    ],
+    ["apt-get", "install", "-y", "-q", ...dependencyPackages(formats)],
   ]) {
     // sudo children are root-owned, so the runner cannot signal them; timeout runs as root.
     info(`Running ${args.slice(0, 2).join(" ")}`);
