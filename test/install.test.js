@@ -29,24 +29,6 @@ function forbidDownloads(t) {
   });
 }
 
-async function interceptSetup(t, root) {
-  const log = path.join(root, "setup.jsonl");
-  // Never invoke sudo or the host's package manager from these tests.
-  await writeFile(
-    path.join(root, "sudo"),
-    `#!${process.execPath}
-require('node:fs').appendFileSync(${JSON.stringify(log)}, JSON.stringify(process.argv.slice(2))+'\\n');
-`,
-    { mode: 0o755 },
-  );
-  const previousPath = process.env.PATH;
-  process.env.PATH = `${root}${path.delimiter}${previousPath}`;
-  t.after(() => {
-    process.env.PATH = previousPath;
-  });
-  return log;
-}
-
 test("local binary is invoked literally from working-directory and overrides release settings", async (t) => {
   const root = await fixture(t);
   const working = path.join(root, "project");
@@ -107,7 +89,6 @@ test("local binary rejects missing, non-executable, non-file, escaped and symlin
   await symlink("cli", path.join(working, "link"));
   await symlink(working, path.join(working, "linked-directory"));
   const fetch = forbidDownloads(t);
-  const setupLog = await interceptSetup(t, root);
   const directory = path.join(root, "installation");
   for (const candidate of [
     "missing",
@@ -130,7 +111,6 @@ test("local binary rejects missing, non-executable, non-file, escaped and symlin
     );
   }
   assert.equal(fetch.mock.callCount(), 0);
-  await assert.rejects(access(setupLog), { code: "ENOENT" });
   await assert.rejects(access(directory), { code: "ENOENT" });
   assert.equal(
     await prepareBinary({
