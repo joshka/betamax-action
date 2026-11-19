@@ -42,13 +42,15 @@ export async function prepareBinary({
   formats = [],
   fonts = FONTS,
   fontDirectory = path.join(os.homedir(), ".local/share/fonts/betamax"),
+  ffmpeg,
+  addPath = prependPath,
   info = () => {},
 }) {
   const executable = binary
     ? await localBinary(root, binary)
     : await installRelease(directory, version, checksum);
   if (dependencies) {
-    await installDependencies(directory, formats, info);
+    await installFfmpeg(directory, formats, info, addPath, ffmpeg);
     await installFonts(fontDirectory, fonts, info);
   }
   return executable;
@@ -94,9 +96,24 @@ async function installRelease(directory, version, checksum) {
 }
 
 // Betamax bundles JetBrains Mono and writes GIF, PNG and WebP itself; only MP4 and WebM need
-// ffmpeg. Fonts never come from apt (see FONTS), so image-only runs skip apt entirely.
-export function dependencyPackages(formats) {
-  return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg"] : [];
+// ffmpeg. It comes from a pinned FFmpeg-Builds static release instead of apt, because Ubuntu's
+// archives on hosted runners can take minutes to serve packages or stall entirely. Month-end
+// autobuilds are kept long term upstream; daily ones are pruned after a few weeks.
+const FFMPEG_RELEASE =
+  "https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/autobuild-2026-10-31-12-59";
+const FFMPEG = {
+  x64: {
+    name: "ffmpeg-n8.1.3-27-g8dca1586f4-linux64-gpl-8.1",
+    sha256: "41e9c565594c390622cf968d82fa4135d9e9a11d06c1515644288cbc844e3380",
+  },
+  arm64: {
+    name: "ffmpeg-n8.1.3-27-g8dca1586f4-linuxarm64-gpl-8.1",
+    sha256: "a08c0ee6e1c4e02139344b303002dcc7c37cf125d639f1fbd15dabee40fcb525",
+  },
+};
+
+export function needsFfmpeg(formats) {
+  return formats.some((format) => ["mp4", "webm"].includes(format));
 }
 
 // Fallback fonts come from fast CDNs with pinned digests instead of apt: Ubuntu's archives can take
@@ -173,41 +190,25 @@ async function installFonts(directory, fonts, info) {
   }
 }
 
-// GitHub-hosted runners resolve Ubuntu packages through a regional mirror that sometimes serves
-// them at a few KB/s without failing, so apt never fails over (actions/runner-images#14823).
-const RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
-
-async function preferGlobalArchive(directory) {
-  try {
-    await access(RUNNER_MIRRORS);
-  } catch {
-    return;
-  }
-  await execute("sudo", ["-n", "tee", RUNNER_MIRRORS], {
-    input: "http://archive.ubuntu.com/ubuntu/\n",
-    timeout: 10_000,
-    log: path.join(directory, "dependencies.log"),
-  });
+async function installFfmpeg(directory, formats, info, addPath, build = FFMPEG[process.arch]) {
+  if (!needsFfmpeg(formats)) return;
+  if (!build) throw new Error("ffmpeg is available only for x64 and ARM64 runners");
+  const { name, sha256, url = `${FFMPEG_RELEASE}/${name}.tar.xz` } = build;
+  info(`Downloading ${name}`);
+  const response = await fetch(url, { signal: AbortSignal.timeout(180_000) });
+  if (!response.ok) throw new Error(`ffmpeg download failed (HTTP ${response.status})`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (digest(bytes) !== sha256) throw new Error("ffmpeg archive checksum mismatch");
+  await mkdir(directory, { recursive: true });
+  const archive = path.join(directory, `${name}.tar.xz`);
+  await writeFile(archive, bytes);
+  const members = ["ffmpeg", "ffprobe"].map((tool) => `${name}/bin/${tool}`);
+  const result = await execute("tar", ["-xJf", archive, "-C", directory, ...members]);
+  await rm(archive, { force: true });
+  if (result.code !== 0) throw new Error("Could not extract verified ffmpeg archive");
+  addPath(path.join(directory, name, "bin"));
 }
 
-async function installDependencies(directory, formats, info) {
-  const packages = dependencyPackages(formats);
-  if (!packages.length) return;
-  await mkdir(directory, { recursive: true });
-  await preferGlobalArchive(directory);
-  for (const args of [
-    ["apt-get", "update", "-q"],
-    ["apt-get", "install", "-y", "-q", ...packages],
-  ]) {
-    // sudo children are root-owned, so the runner cannot signal them; timeout runs as root.
-    info(`Running ${args.slice(0, 2).join(" ")}`);
-    const setup = await execute("sudo", ["-n", "timeout", "--kill-after=10", "290", ...args], {
-      timeout: 300_000,
-      log: path.join(directory, "dependencies.log"),
-    });
-    if (setup.code !== 0)
-      throw new Error(
-        `Dependency installation ${[124, 137].includes(setup.code) || setup.timedOut ? "timed out" : "failed"}; install dependencies in an earlier step and set install-dependencies: false`,
-      );
-  }
+function prependPath(directory) {
+  process.env.PATH = `${directory}${path.delimiter}${process.env.PATH ?? ""}`;
 }
