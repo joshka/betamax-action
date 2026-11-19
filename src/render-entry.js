@@ -61,6 +61,7 @@ try {
       version: core.getInput("version") || "0.4.0",
       checksum: core.getInput("sha256"),
       dependencies: core.getBooleanInput("install-dependencies"),
+      formats,
       info: core.info,
     });
     const result = await render({

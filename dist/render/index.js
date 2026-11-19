@@ -96716,11 +96716,12 @@ async function prepareBinary({
   version: version3,
   checksum,
   dependencies,
+  formats = [],
   info: info2 = () => {
   }
 }) {
   const executable = binary ? await localBinary(root, binary) : await installRelease(directory, version3, checksum);
-  if (dependencies) await installDependencies(directory, info2);
+  if (dependencies) await installDependencies(directory, formats, info2);
   return executable;
 }
 async function localBinary(root, candidate) {
@@ -96760,21 +96761,29 @@ async function installRelease(directory, version3, checksum) {
   await chmod2(binary, 493);
   return binary;
 }
-async function installDependencies(directory, info2) {
+function dependencyPackages(formats) {
+  const packages = ["fonts-dejavu-core", "fonts-noto-core", "fonts-noto-cjk"];
+  return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg", ...packages] : packages;
+}
+var RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
+async function preferGlobalArchive(directory) {
+  try {
+    await access3(RUNNER_MIRRORS);
+  } catch {
+    return;
+  }
+  await execute("sudo", ["-n", "tee", RUNNER_MIRRORS], {
+    input: "http://archive.ubuntu.com/ubuntu/\n",
+    timeout: 1e4,
+    log: path5.join(directory, "dependencies.log")
+  });
+}
+async function installDependencies(directory, formats, info2) {
   await mkdir2(directory, { recursive: true });
+  await preferGlobalArchive(directory);
   for (const args of [
     ["apt-get", "update", "-q"],
-    [
-      "apt-get",
-      "install",
-      "-y",
-      "-q",
-      "ffmpeg",
-      "fonts-dejavu-core",
-      "fonts-jetbrains-mono",
-      "fonts-noto-core",
-      "fonts-noto-cjk"
-    ]
+    ["apt-get", "install", "-y", "-q", ...dependencyPackages(formats)]
   ]) {
     info2(`Running ${args.slice(0, 2).join(" ")}`);
     const setup = await execute("sudo", ["-n", "timeout", "--kill-after=10", "290", ...args], {
@@ -100481,6 +100490,7 @@ try {
       version: getInput("version") || "0.4.0",
       checksum: getInput("sha256"),
       dependencies: getBooleanInput("install-dependencies"),
+      formats,
       info
     });
     const result = await render({

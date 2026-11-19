@@ -43,7 +43,7 @@ results to the PR comment.
 | `binary`               | Empty             | Local executable path; overrides release version and checksum.                   |
 | `version`              | `0.4.0`           | Release version; ignored when `binary` is set.                                   |
 | `sha256`               | Bundled for 0.4.0 | Release archive digest; ignored when `binary` is set.                            |
-| `install-dependencies` | `true`            | Install ffmpeg and DejaVu, JetBrains Mono and Noto fonts with apt.               |
+| `install-dependencies` | `true`            | Install DejaVu and Noto fonts, plus ffmpeg for video formats, with apt.          |
 | `timeout-seconds`      | `120`             | Time limit for each tape; 1–1800.                                                |
 | `retention-days`       | `14`              | Requested retention, 1–90 days, capped by repository policy.                     |
 | `comment-key`          | `betamax`         | Shared identifier for rendering and reporting.                                   |
@@ -250,10 +250,15 @@ through the separate report workflow.
 
 ### Fonts and dependencies
 
-The action installs ffmpeg and DejaVu, JetBrains Mono and Noto fonts by default. To choose fonts,
-install them before the action and set `Set FontFamily` in the tape. Runner images can still produce
-different rendering results. Set `install-dependencies: false` if earlier steps provide the fonts
-and ffmpeg. The action does not cache installations.
+Betamax bundles JetBrains Mono, its default font. The action installs DejaVu and Noto fonts with apt
+for symbol and CJK fallback, and adds ffmpeg only when `formats` includes `mp4` or `webm`. A tape
+that writes video through its own `Output` line still needs one of those formats, or ffmpeg from an
+earlier step. On GitHub-hosted runners the action points apt at `archive.ubuntu.com`, because the
+runner's regional mirror can stall installs for minutes. The action does not cache installations.
+
+To choose fonts, install them before the action and set `Set FontFamily` in the tape. Runner images
+can still produce different rendering results. Set `install-dependencies: false` if earlier steps
+provide the fonts and ffmpeg.
 
 ### Inline attachments
 

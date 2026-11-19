@@ -38,12 +38,13 @@ export async function prepareBinary({
   version,
   checksum,
   dependencies,
+  formats = [],
   info = () => {},
 }) {
   const executable = binary
     ? await localBinary(root, binary)
     : await installRelease(directory, version, checksum);
-  if (dependencies) await installDependencies(directory, info);
+  if (dependencies) await installDependencies(directory, formats, info);
   return executable;
 }
 
@@ -86,21 +87,38 @@ async function installRelease(directory, version, checksum) {
   return binary;
 }
 
-async function installDependencies(directory, info) {
+// Betamax bundles JetBrains Mono and writes GIF, PNG and WebP itself; only MP4 and WebM need
+// ffmpeg, which is most of the download.
+export function dependencyPackages(formats) {
+  const packages = ["fonts-dejavu-core", "fonts-noto-core", "fonts-noto-cjk"];
+  return formats.some((format) => ["mp4", "webm"].includes(format))
+    ? ["ffmpeg", ...packages]
+    : packages;
+}
+
+// GitHub-hosted runners resolve Ubuntu packages through a regional mirror that sometimes serves
+// them at a few KB/s without failing, so apt never fails over (actions/runner-images#14823).
+const RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
+
+async function preferGlobalArchive(directory) {
+  try {
+    await access(RUNNER_MIRRORS);
+  } catch {
+    return;
+  }
+  await execute("sudo", ["-n", "tee", RUNNER_MIRRORS], {
+    input: "http://archive.ubuntu.com/ubuntu/\n",
+    timeout: 10_000,
+    log: path.join(directory, "dependencies.log"),
+  });
+}
+
+async function installDependencies(directory, formats, info) {
   await mkdir(directory, { recursive: true });
+  await preferGlobalArchive(directory);
   for (const args of [
     ["apt-get", "update", "-q"],
-    [
-      "apt-get",
-      "install",
-      "-y",
-      "-q",
-      "ffmpeg",
-      "fonts-dejavu-core",
-      "fonts-jetbrains-mono",
-      "fonts-noto-core",
-      "fonts-noto-cjk",
-    ],
+    ["apt-get", "install", "-y", "-q", ...dependencyPackages(formats)],
   ]) {
     // sudo children are root-owned, so the runner cannot signal them; timeout runs as root.
     info(`Running ${args.slice(0, 2).join(" ")}`);

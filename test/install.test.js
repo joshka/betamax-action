@@ -13,7 +13,7 @@ import {
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { prepareBinary } from "../src/install.js";
+import { dependencyPackages, prepareBinary } from "../src/install.js";
 import { render } from "../src/render.js";
 import { digest } from "../src/common.js";
 
@@ -158,11 +158,16 @@ test("local binary still installs dependencies when requested", async (t) => {
     }),
     candidate,
   );
-  const calls = (await readFile(setupLog, "utf8")).trim().split("\n").map(JSON.parse);
+  // GitHub-hosted runners also get a mirror rewrite first; check only the apt calls.
+  const calls = (await readFile(setupLog, "utf8"))
+    .trim()
+    .split("\n")
+    .map(JSON.parse)
+    .filter((call) => call.includes("apt-get"));
   const bounded = ["-n", "timeout", "--kill-after=10", "290"];
   assert.deepEqual(calls[0], [...bounded, "apt-get", "update", "-q"]);
   assert.deepEqual(calls[1].slice(0, 8), [...bounded, "apt-get", "install", "-y", "-q"]);
-  assert.ok(calls[1].includes("ffmpeg"));
+  assert.ok(!calls[1].includes("ffmpeg"));
   assert.ok(calls[1].includes("fonts-dejavu-core"));
   assert.equal(fetch.mock.callCount(), 0);
 });
@@ -201,3 +206,10 @@ test(
     );
   },
 );
+
+test("ffmpeg is installed only for video formats", () => {
+  assert.ok(!dependencyPackages(["gif", "png", "webp"]).includes("ffmpeg"));
+  assert.ok(dependencyPackages(["png", "mp4"]).includes("ffmpeg"));
+  assert.ok(dependencyPackages(["webm"]).includes("ffmpeg"));
+  assert.ok(!dependencyPackages(["gif"]).includes("fonts-jetbrains-mono"));
+});
