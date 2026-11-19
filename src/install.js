@@ -1,4 +1,4 @@
-import { access, chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { constants } from "node:fs";
 import path from "node:path";
@@ -40,8 +40,8 @@ export async function prepareBinary({
   checksum,
   dependencies,
   formats = [],
-  fonts = CJK_FONTS,
-  fontDirectory = path.join(os.homedir(), ".local/share/fonts/betamax-noto-cjk"),
+  fonts = FONTS,
+  fontDirectory = path.join(os.homedir(), ".local/share/fonts/betamax"),
   info = () => {},
 }) {
   const executable = binary
@@ -94,36 +94,58 @@ async function installRelease(directory, version, checksum) {
 }
 
 // Betamax bundles JetBrains Mono and writes GIF, PNG and WebP itself; only MP4 and WebM need
-// ffmpeg, which is most of the download.
+// ffmpeg. Fonts never come from apt (see FONTS), so image-only runs skip apt entirely.
 export function dependencyPackages(formats) {
-  const packages = ["fonts-dejavu-core", "fonts-noto-core"];
-  return formats.some((format) => ["mp4", "webm"].includes(format))
-    ? ["ffmpeg", ...packages]
-    : packages;
+  return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg"] : [];
 }
 
-// Noto Sans CJK, which also contains Noto Sans Mono CJK, comes from GitHub rather than apt: the
-// fonts-noto-cjk package is about 61 MB and Ubuntu's archives can take minutes to serve it. These
-// are the upstream files at the Sans2.004 tag; fontdb and fontconfig both scan ~/.local/share/fonts.
-const CJK_FONTS = Object.fromEntries(
-  [
-    ["NotoSansCJK-Regular.ttc", "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"],
-    ["NotoSansCJK-Bold.ttc", "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"],
-  ].map(([name, sha256]) => [
-    name,
-    {
-      url: `https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/${name}`,
-      sha256,
-    },
-  ]),
-);
+// Fallback fonts come from fast CDNs with pinned digests instead of apt: Ubuntu's archives can take
+// minutes to serve them. Noto Sans CJK (which also contains Noto Sans Mono CJK) is the upstream
+// Sans2.004 release. DejaVu and Noto core are Debian's builds of the same versions Ubuntu 24.04
+// ships; the Noto files are byte-identical to Ubuntu's. fontdb and fontconfig both scan
+// ~/.local/share/fonts, so nothing needs root.
+const CJK = "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC";
+const DEBIAN = "https://deb.debian.org/debian/pool/main/f";
+const FONTS = {
+  "NotoSansCJK-Regular.ttc": {
+    url: `${CJK}/NotoSansCJK-Regular.ttc`,
+    sha256: "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a",
+  },
+  "NotoSansCJK-Bold.ttc": {
+    url: `${CJK}/NotoSansCJK-Bold.ttc`,
+    sha256: "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb",
+  },
+  "fonts-dejavu-core": {
+    url: `${DEBIAN}/fonts-dejavu/fonts-dejavu-core_2.37-8_all.deb`,
+    sha256: "86635b3d25b3655fc11cb3ecc3af59f0bf19643b02b94f2de48bd10253cdba12",
+    deb: true,
+  },
+  "fonts-dejavu-mono": {
+    url: `${DEBIAN}/fonts-dejavu/fonts-dejavu-mono_2.37-8_all.deb`,
+    sha256: "3003e98a5debfdeadc7040a7f715fe9fe6fb67f68deacf6049b54e30f07fc014",
+    deb: true,
+  },
+  "fonts-noto-core": {
+    url: `${DEBIAN}/fonts-noto/fonts-noto-core_20201225-2_all.deb`,
+    sha256: "97978d09b68445fcf85342b106cd2e812d7813e3d5626f9884a5f344c3a55973",
+    deb: true,
+  },
+  "fonts-noto-mono": {
+    url: `${DEBIAN}/fonts-noto/fonts-noto-mono_20201225-2_all.deb`,
+    sha256: "7636f002caeb4a4082f69e2d9b8eb89da6c50b9c67f55db84e68638049b06006",
+    deb: true,
+  },
+};
 
 async function installFonts(directory, fonts, info) {
   await mkdir(directory, { recursive: true });
-  for (const [name, { url, sha256 }] of Object.entries(fonts)) {
+  for (const [name, { url, sha256, deb }] of Object.entries(fonts)) {
     const target = path.join(directory, name);
+    // A package unpacks to a directory, so a marker records which verified archive it came from.
+    const marker = deb ? path.join(target, ".sha256") : target;
     try {
-      if (digest(await readFile(target)) === sha256) continue;
+      const installed = await readFile(marker);
+      if ((deb ? installed.toString() : digest(installed)) === sha256) continue;
     } catch {
       // Not installed yet.
     }
@@ -132,7 +154,22 @@ async function installFonts(directory, fonts, info) {
     if (!response.ok) throw new Error(`Font download failed for ${name} (HTTP ${response.status})`);
     const bytes = Buffer.from(await response.arrayBuffer());
     if (digest(bytes) !== sha256) throw new Error(`Font checksum mismatch for ${name}`);
-    await writeFile(target, bytes);
+    if (!deb) {
+      await writeFile(target, bytes);
+      continue;
+    }
+    const scratch = await mkdtemp(path.join(os.tmpdir(), "betamax-fonts-"));
+    try {
+      const archive = path.join(scratch, `${name}.deb`);
+      await writeFile(archive, bytes);
+      const result = await execute("dpkg-deb", ["-x", archive, path.join(scratch, "root")]);
+      if (result.code !== 0) throw new Error(`Could not unpack verified font package ${name}`);
+      await rm(target, { recursive: true, force: true });
+      await cp(path.join(scratch, "root/usr/share/fonts"), target, { recursive: true });
+      await writeFile(marker, sha256);
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
   }
 }
 
@@ -154,11 +191,13 @@ async function preferGlobalArchive(directory) {
 }
 
 async function installDependencies(directory, formats, info) {
+  const packages = dependencyPackages(formats);
+  if (!packages.length) return;
   await mkdir(directory, { recursive: true });
   await preferGlobalArchive(directory);
   for (const args of [
     ["apt-get", "update", "-q"],
-    ["apt-get", "install", "-y", "-q", ...dependencyPackages(formats)],
+    ["apt-get", "install", "-y", "-q", ...packages],
   ]) {
     // sudo children are root-owned, so the runner cannot signal them; timeout runs as root.
     info(`Running ${args.slice(0, 2).join(" ")}`);

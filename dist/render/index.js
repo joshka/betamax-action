@@ -5200,8 +5200,8 @@ var require_formdata_parser = __commonJS({
         return false;
       }
       for (let i = 0; i < length; ++i) {
-        const cp = boundary.charCodeAt(i);
-        if (!(cp >= 48 && cp <= 57 || cp >= 65 && cp <= 90 || cp >= 97 && cp <= 122 || cp === 39 || cp === 45 || cp === 95)) {
+        const cp2 = boundary.charCodeAt(i);
+        if (!(cp2 >= 48 && cp2 <= 57 || cp2 >= 65 && cp2 <= 90 || cp2 >= 97 && cp2 <= 122 || cp2 === 39 || cp2 === 45 || cp2 === 95)) {
           return false;
         }
       }
@@ -61423,11 +61423,11 @@ var EntityDecoder = class {
    * @param {number} cp  — codepoint
    * @returns {number}   — minimum NCR_LEVEL value, or -1 for no restriction
    */
-  _classifyNCR(cp) {
-    if (cp === 0) return this._ncrNullLevel;
-    if (cp >= 55296 && cp <= 57343) return NCR_LEVEL.remove;
+  _classifyNCR(cp2) {
+    if (cp2 === 0) return this._ncrNullLevel;
+    if (cp2 >= 55296 && cp2 <= 57343) return NCR_LEVEL.remove;
     if (this._ncrXmlVersion === 1) {
-      if (cp >= 1 && cp <= 31 && !XML10_ALLOWED_C0.has(cp)) return NCR_LEVEL.remove;
+      if (cp2 >= 1 && cp2 <= 31 && !XML10_ALLOWED_C0.has(cp2)) return NCR_LEVEL.remove;
     }
     return -1;
   }
@@ -61443,10 +61443,10 @@ var EntityDecoder = class {
    *   - undefined                 → 'leave' (caller must skip past '&' only)
    *   - throws Error              → 'throw'
    */
-  _applyNCRAction(action5, token, cp) {
+  _applyNCRAction(action5, token, cp2) {
     switch (action5) {
       case NCR_LEVEL.allow:
-        return String.fromCodePoint(cp);
+        return String.fromCodePoint(cp2);
       case NCR_LEVEL.remove:
         return "";
       case NCR_LEVEL.leave:
@@ -61454,10 +61454,10 @@ var EntityDecoder = class {
       // signal: keep literal
       case NCR_LEVEL.throw:
         throw new Error(
-          `[EntityDecoder] Prohibited numeric character reference &${token}; (U+${cp.toString(16).toUpperCase().padStart(4, "0")})`
+          `[EntityDecoder] Prohibited numeric character reference &${token}; (U+${cp2.toString(16).toUpperCase().padStart(4, "0")})`
         );
       default:
-        return String.fromCodePoint(cp);
+        return String.fromCodePoint(cp2);
     }
   }
   /**
@@ -61478,17 +61478,17 @@ var EntityDecoder = class {
    */
   _resolveNCR(token) {
     const second = token.charCodeAt(1);
-    let cp;
+    let cp2;
     if (second === 120 || second === 88) {
-      cp = parseInt(token.slice(2), 16);
+      cp2 = parseInt(token.slice(2), 16);
     } else {
-      cp = parseInt(token.slice(1), 10);
+      cp2 = parseInt(token.slice(1), 10);
     }
-    if (Number.isNaN(cp) || cp < 0 || cp > 1114111) return void 0;
-    const minimum = this._classifyNCR(cp);
+    if (Number.isNaN(cp2) || cp2 < 0 || cp2 > 1114111) return void 0;
+    const minimum = this._classifyNCR(cp2);
     if (!this._numericAllowed && minimum < NCR_LEVEL.remove) return void 0;
     const effective = minimum === -1 ? this._ncrOnLevel : Math.max(this._ncrOnLevel, minimum);
-    return this._applyNCRAction(effective, token, cp);
+    return this._applyNCRAction(effective, token, cp2);
   }
 };
 
@@ -62151,11 +62151,11 @@ var TABLE_SIZE = LOW_MAX - LOW_MIN + 1;
 var TABLE = new Uint8Array(TABLE_SIZE).fill(NOT_DIGIT);
 for (const zero of SCRIPT_ZEROS) {
   for (let d = 0; d < 10; d++) {
-    const cp = zero + d;
-    if (cp <= LOW_MAX) {
-      TABLE[cp - TABLE_OFFSET] = d;
+    const cp2 = zero + d;
+    if (cp2 <= LOW_MAX) {
+      TABLE[cp2 - TABLE_OFFSET] = d;
     } else {
-      HIGH_MAP.set(cp, d);
+      HIGH_MAP.set(cp2, d);
     }
   }
 }
@@ -62184,8 +62184,8 @@ function anynum(str) {
       if (i + 1 < len) {
         const low = str.charCodeAt(i + 1);
         if (low >= 56320 && low <= 57343) {
-          const cp = 65536 + (cc - 55296 << 10) + (low - 56320);
-          if (HIGH_MAP.has(cp)) {
+          const cp2 = 65536 + (cc - 55296 << 10) + (low - 56320);
+          if (HIGH_MAP.has(cp2)) {
             firstHit = i;
             break;
           }
@@ -62215,8 +62215,8 @@ function anynum(str) {
       if (i + 1 < len) {
         const low = str.charCodeAt(i + 1);
         if (low >= 56320 && low <= 57343) {
-          const cp = 65536 + (cc - 55296 << 10) + (low - 56320);
-          const d2 = HIGH_MAP.get(cp);
+          const cp2 = 65536 + (cc - 55296 << 10) + (low - 56320);
+          const d2 = HIGH_MAP.get(cp2);
           if (d2 !== void 0) {
             chars.push(String.fromCharCode(d2 + 48));
             i++;
@@ -63906,9 +63906,9 @@ function decodeEntities(input) {
     if (name !== void 0) {
       return Object.prototype.hasOwnProperty.call(NAMED, name) ? NAMED[name] : match;
     }
-    const cp = hex !== void 0 ? parseInt(hex, 16) : parseInt(dec, 10);
-    if (!Number.isFinite(cp) || cp > 1114111) return match;
-    return String.fromCodePoint(cp);
+    const cp2 = hex !== void 0 ? parseInt(hex, 16) : parseInt(dec, 10);
+    if (!Number.isFinite(cp2) || cp2 > 1114111) return match;
+    return String.fromCodePoint(cp2);
   });
 }
 
@@ -96549,7 +96549,7 @@ If the error persists, please check whether Actions and API requests are operati
 var client = new DefaultArtifactClient();
 
 // src/render-entry.js
-import { mkdtemp, readdir as readdir2 } from "node:fs/promises";
+import { mkdtemp as mkdtemp2, readdir as readdir2 } from "node:fs/promises";
 import path7 from "node:path";
 import os9 from "node:os";
 
@@ -96630,7 +96630,7 @@ async function readMedia(root, file) {
 }
 
 // src/install.js
-import { access as access3, chmod as chmod2, mkdir as mkdir2, readFile as readFile2, writeFile as writeFile2 } from "node:fs/promises";
+import { access as access3, chmod as chmod2, cp, mkdir as mkdir2, mkdtemp, readFile as readFile2, rm as rm2, writeFile as writeFile2 } from "node:fs/promises";
 import os7 from "node:os";
 import { constants as constants3 } from "node:fs";
 import path5 from "node:path";
@@ -96718,8 +96718,8 @@ async function prepareBinary({
   checksum,
   dependencies,
   formats = [],
-  fonts = CJK_FONTS,
-  fontDirectory = path5.join(os7.homedir(), ".local/share/fonts/betamax-noto-cjk"),
+  fonts = FONTS,
+  fontDirectory = path5.join(os7.homedir(), ".local/share/fonts/betamax"),
   info: info2 = () => {
   }
 }) {
@@ -96768,27 +96768,48 @@ async function installRelease(directory, version3, checksum) {
   return binary;
 }
 function dependencyPackages(formats) {
-  const packages = ["fonts-dejavu-core", "fonts-noto-core"];
-  return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg", ...packages] : packages;
+  return formats.some((format) => ["mp4", "webm"].includes(format)) ? ["ffmpeg"] : [];
 }
-var CJK_FONTS = Object.fromEntries(
-  [
-    ["NotoSansCJK-Regular.ttc", "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"],
-    ["NotoSansCJK-Bold.ttc", "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"]
-  ].map(([name, sha256]) => [
-    name,
-    {
-      url: `https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/${name}`,
-      sha256
-    }
-  ])
-);
+var CJK = "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC";
+var DEBIAN = "https://deb.debian.org/debian/pool/main/f";
+var FONTS = {
+  "NotoSansCJK-Regular.ttc": {
+    url: `${CJK}/NotoSansCJK-Regular.ttc`,
+    sha256: "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"
+  },
+  "NotoSansCJK-Bold.ttc": {
+    url: `${CJK}/NotoSansCJK-Bold.ttc`,
+    sha256: "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"
+  },
+  "fonts-dejavu-core": {
+    url: `${DEBIAN}/fonts-dejavu/fonts-dejavu-core_2.37-8_all.deb`,
+    sha256: "86635b3d25b3655fc11cb3ecc3af59f0bf19643b02b94f2de48bd10253cdba12",
+    deb: true
+  },
+  "fonts-dejavu-mono": {
+    url: `${DEBIAN}/fonts-dejavu/fonts-dejavu-mono_2.37-8_all.deb`,
+    sha256: "3003e98a5debfdeadc7040a7f715fe9fe6fb67f68deacf6049b54e30f07fc014",
+    deb: true
+  },
+  "fonts-noto-core": {
+    url: `${DEBIAN}/fonts-noto/fonts-noto-core_20201225-2_all.deb`,
+    sha256: "97978d09b68445fcf85342b106cd2e812d7813e3d5626f9884a5f344c3a55973",
+    deb: true
+  },
+  "fonts-noto-mono": {
+    url: `${DEBIAN}/fonts-noto/fonts-noto-mono_20201225-2_all.deb`,
+    sha256: "7636f002caeb4a4082f69e2d9b8eb89da6c50b9c67f55db84e68638049b06006",
+    deb: true
+  }
+};
 async function installFonts(directory, fonts, info2) {
   await mkdir2(directory, { recursive: true });
-  for (const [name, { url: url2, sha256 }] of Object.entries(fonts)) {
+  for (const [name, { url: url2, sha256, deb }] of Object.entries(fonts)) {
     const target = path5.join(directory, name);
+    const marker2 = deb ? path5.join(target, ".sha256") : target;
     try {
-      if (digest(await readFile2(target)) === sha256) continue;
+      const installed = await readFile2(marker2);
+      if ((deb ? installed.toString() : digest(installed)) === sha256) continue;
     } catch {
     }
     info2(`Downloading ${name}`);
@@ -96796,7 +96817,22 @@ async function installFonts(directory, fonts, info2) {
     if (!response.ok) throw new Error(`Font download failed for ${name} (HTTP ${response.status})`);
     const bytes = Buffer.from(await response.arrayBuffer());
     if (digest(bytes) !== sha256) throw new Error(`Font checksum mismatch for ${name}`);
-    await writeFile2(target, bytes);
+    if (!deb) {
+      await writeFile2(target, bytes);
+      continue;
+    }
+    const scratch = await mkdtemp(path5.join(os7.tmpdir(), "betamax-fonts-"));
+    try {
+      const archive = path5.join(scratch, `${name}.deb`);
+      await writeFile2(archive, bytes);
+      const result = await execute("dpkg-deb", ["-x", archive, path5.join(scratch, "root")]);
+      if (result.code !== 0) throw new Error(`Could not unpack verified font package ${name}`);
+      await rm2(target, { recursive: true, force: true });
+      await cp(path5.join(scratch, "root/usr/share/fonts"), target, { recursive: true });
+      await writeFile2(marker2, sha256);
+    } finally {
+      await rm2(scratch, { recursive: true, force: true });
+    }
   }
 }
 var RUNNER_MIRRORS = "/etc/apt/apt-mirrors.txt";
@@ -96813,11 +96849,13 @@ async function preferGlobalArchive(directory) {
   });
 }
 async function installDependencies(directory, formats, info2) {
+  const packages = dependencyPackages(formats);
+  if (!packages.length) return;
   await mkdir2(directory, { recursive: true });
   await preferGlobalArchive(directory);
   for (const args of [
     ["apt-get", "update", "-q"],
-    ["apt-get", "install", "-y", "-q", ...dependencyPackages(formats)]
+    ["apt-get", "install", "-y", "-q", ...packages]
   ]) {
     info2(`Running ${args.slice(0, 2).join(" ")}`);
     const setup = await execute("sudo", ["-n", "timeout", "--kill-after=10", "290", ...args], {
@@ -100502,7 +100540,7 @@ try {
   const variant = identifier(getInput("variant") || "default", "variant");
   const attempt = integer(process.env.GITHUB_RUN_ATTEMPT || "1", "run attempt", 1, 1e4);
   const prefix2 = `betamax-${key}-${variant}-r${attempt}`;
-  const directory = await mkdtemp(path7.join(process.env.RUNNER_TEMP || os9.tmpdir(), "betamax-"));
+  const directory = await mkdtemp2(path7.join(process.env.RUNNER_TEMP || os9.tmpdir(), "betamax-"));
   const root = await regularPath(
     process.env.GITHUB_WORKSPACE,
     getInput("working-directory") || ".",

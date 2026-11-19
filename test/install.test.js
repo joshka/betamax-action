@@ -160,6 +160,7 @@ test("local binary still installs dependencies when requested", async (t) => {
     directory: path.join(root, "installation"),
     binary: "cli",
     dependencies: true,
+    formats: ["gif", "mp4"],
     fonts,
     fontDirectory,
   };
@@ -172,10 +173,8 @@ test("local binary still installs dependencies when requested", async (t) => {
     .filter((call) => call.includes("apt-get"));
   const bounded = ["-n", "timeout", "--kill-after=10", "290"];
   assert.deepEqual(calls[0], [...bounded, "apt-get", "update", "-q"]);
-  assert.deepEqual(calls[1].slice(0, 8), [...bounded, "apt-get", "install", "-y", "-q"]);
-  assert.ok(!calls[1].includes("ffmpeg"));
-  assert.ok(calls[1].includes("fonts-dejavu-core"));
-  assert.ok(!calls[1].includes("fonts-noto-cjk"));
+  // Fonts never come from apt; only video formats need it, for ffmpeg.
+  assert.deepEqual(calls[1], [...bounded, "apt-get", "install", "-y", "-q", "ffmpeg"]);
   assert.deepEqual(await readFile(path.join(fontDirectory, "Test.ttc")), font);
   assert.equal(fetch.mock.callCount(), 1);
   // A verified font already in place is not downloaded again.
@@ -218,12 +217,65 @@ test(
   },
 );
 
-test("ffmpeg is installed only for video formats", () => {
-  assert.ok(!dependencyPackages(["gif", "png", "webp"]).includes("ffmpeg"));
-  assert.ok(dependencyPackages(["png", "mp4"]).includes("ffmpeg"));
-  assert.ok(dependencyPackages(["webm"]).includes("ffmpeg"));
-  assert.ok(!dependencyPackages(["gif"]).includes("fonts-jetbrains-mono"));
+test("apt installs only ffmpeg, and only for video formats", () => {
+  assert.deepEqual(dependencyPackages(["gif", "png", "webp"]), []);
+  assert.deepEqual(dependencyPackages(["png", "mp4"]), ["ffmpeg"]);
+  assert.deepEqual(dependencyPackages(["webm"]), ["ffmpeg"]);
 });
+
+test("image-only formats skip apt", async (t) => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, "cli"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  const setupLog = await interceptSetup(t, root);
+  await prepareBinary({
+    root,
+    directory: path.join(root, "installation"),
+    binary: "cli",
+    dependencies: true,
+    formats: ["gif", "png", "webp"],
+    fonts: {},
+    fontDirectory: path.join(root, "fonts"),
+  });
+  await assert.rejects(readFile(setupLog), { code: "ENOENT" });
+});
+
+test(
+  "font packages unpack their fonts without root",
+  { skip: process.platform !== "linux" },
+  async (t) => {
+    const root = await fixture(t);
+    await writeFile(path.join(root, "cli"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const tree = path.join(root, "package");
+    await mkdir(path.join(tree, "DEBIAN"), { recursive: true });
+    await mkdir(path.join(tree, "usr/share/fonts/truetype/test"), { recursive: true });
+    await writeFile(
+      path.join(tree, "DEBIAN/control"),
+      "Package: test-font\nVersion: 1\nArchitecture: all\nMaintainer: test <test@example.com>\nDescription: test\n",
+    );
+    await writeFile(path.join(tree, "usr/share/fonts/truetype/test/Test.ttf"), "glyphs");
+    execFileSync("dpkg-deb", ["--build", "--root-owner-group", tree, path.join(root, "test.deb")]);
+    const bytes = await readFile(path.join(root, "test.deb"));
+    const fetch = t.mock.method(globalThis, "fetch", async () => new Response(bytes));
+    const fontDirectory = path.join(root, "fonts");
+    const options = {
+      root,
+      directory: path.join(root, "installation"),
+      binary: "cli",
+      dependencies: true,
+      fonts: {
+        "test-font": { url: "https://fonts.example/test.deb", sha256: digest(bytes), deb: true },
+      },
+      fontDirectory,
+    };
+    await prepareBinary(options);
+    assert.equal(
+      await readFile(path.join(fontDirectory, "test-font/truetype/test/Test.ttf"), "utf8"),
+      "glyphs",
+    );
+    await prepareBinary(options);
+    assert.equal(fetch.mock.callCount(), 1);
+  },
+);
 
 test("a font with the wrong checksum is rejected", async (t) => {
   const root = await fixture(t);
