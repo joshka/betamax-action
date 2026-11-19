@@ -34,20 +34,20 @@ The action uploads an HTML gallery, individual media files and diagnostic logs a
 artifacts, and links the gallery in the job summary. The separate report action publishes these
 results to the PR comment.
 
-| Input                  | Default           | Behavior                                                                         |
-| ---------------------- | ----------------- | -------------------------------------------------------------------------------- |
-| `tapes`                | `**/*.tape`       | Newline-separated paths or globs; `!` excludes matches.                          |
-| `working-directory`    | `.`               | Directory inside the checkout for CLI execution and relative paths.              |
-| `formats`              | `gif,png`         | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`.            |
-| `extra-outputs`        | Empty             | Newline-separated globs for additional media, relative to the working directory. |
-| `binary`               | Empty             | Local executable path; overrides release version and checksum.                   |
-| `version`              | `0.4.0`           | Release version; ignored when `binary` is set.                                   |
-| `sha256`               | Bundled for 0.4.0 | Release archive digest; ignored when `binary` is set.                            |
-| `install-dependencies` | `true`            | Install DejaVu, Noto and Noto Sans CJK fonts, plus ffmpeg for video formats.     |
-| `timeout-seconds`      | `120`             | Time limit for each tape; 1–1800.                                                |
-| `retention-days`       | `14`              | Requested retention, 1–90 days, capped by repository policy.                     |
-| `comment-key`          | `betamax`         | Shared identifier for rendering and reporting.                                   |
-| `variant`              | `default`         | Unique matrix job identifier.                                                    |
+| Input                  | Default           | Behavior                                                                             |
+| ---------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `tapes`                | `**/*.tape`       | Newline-separated paths or globs; `!` excludes matches.                              |
+| `working-directory`    | `.`               | Directory inside the checkout for CLI execution and relative paths.                  |
+| `formats`              | `gif,png`         | Comma-separated preview formats: `gif`, `png`, `webp`, `mp4`, `webm`.                |
+| `extra-outputs`        | Empty             | Newline-separated globs for additional media, relative to the working directory.     |
+| `binary`               | Empty             | Local executable path; overrides release version and checksum.                       |
+| `version`              | `0.4.0`           | Release version; ignored when `binary` is set.                                       |
+| `sha256`               | Bundled for 0.4.0 | Release archive digest; ignored when `binary` is set.                                |
+| `install-dependencies` | `true`            | Download DejaVu, Noto and Noto Sans CJK fonts, and install ffmpeg for video formats. |
+| `timeout-seconds`      | `120`             | Time limit for each tape; 1–1800.                                                    |
+| `retention-days`       | `14`              | Requested retention, 1–90 days, capped by repository policy.                         |
+| `comment-key`          | `betamax`         | Shared identifier for rendering and reporting.                                       |
+| `variant`              | `default`         | Unique matrix job identifier.                                                        |
 
 Rendering identifiers (`comment-key` and `variant`) contain 1–40 lowercase letters, digits or
 hyphens and begin with a letter or digit.
@@ -250,14 +250,15 @@ through the separate report workflow.
 
 ### Fonts and dependencies
 
-Betamax bundles JetBrains Mono, its default font. For symbol and CJK fallback, the action installs
-DejaVu and Noto fonts with apt and downloads Noto Sans CJK (Regular and Bold, about 40 MB) from
-[notofonts/noto-cjk](https://github.com/notofonts/noto-cjk) into `~/.local/share/fonts`, checking
-each file against a pinned SHA-256. It adds ffmpeg only when `formats` includes `mp4` or `webm`. A
-tape that writes video through its own `Output` line still needs one of those formats, or ffmpeg
-from an earlier step. On GitHub-hosted runners the action points apt at `archive.ubuntu.com`,
-because the runner's regional mirror can stall installs for minutes. The action does not cache
-installations.
+Betamax bundles JetBrains Mono, its default font. For symbol and CJK fallback, the action downloads
+DejaVu, Noto and Noto Sans CJK fonts (about 50 MB, a few seconds) into `~/.local/share/fonts`,
+checking each download against a pinned SHA-256. Noto Sans CJK comes from
+[notofonts/noto-cjk](https://github.com/notofonts/noto-cjk); DejaVu and Noto are Debian's packages
+of the versions Ubuntu 24.04 ships, unpacked without root. These downloads skip apt because Ubuntu's
+package archives can take minutes to serve them. apt is used only for ffmpeg, when `formats`
+includes `mp4` or `webm`; on GitHub-hosted runners it is pointed at `archive.ubuntu.com` instead of
+the runner's regional mirror. A tape that writes video through its own `Output` line still needs one
+of those formats, or ffmpeg from an earlier step. The action does not cache installations.
 
 To choose fonts, install them before the action and set `Set FontFamily` in the tape. Runner images
 can still produce different rendering results. Set `install-dependencies: false` if earlier steps
