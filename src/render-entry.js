@@ -58,7 +58,7 @@ try {
       root,
       directory: path.join(directory, "bin"),
       binary: suppliedBinary,
-      version: core.getInput("version") || "0.1.22",
+      version: core.getInput("version") || "0.4.0",
       checksum: core.getInput("sha256"),
       dependencies: core.getBooleanInput("install-dependencies"),
       info: core.info,

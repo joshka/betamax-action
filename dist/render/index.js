@@ -96696,6 +96696,8 @@ function execute(program, args, { cwd, input, log: log2, timeout = 12e4, grace =
 
 // src/install.js
 var CHECKSUMS = {
+  "0.4.0-aarch64-unknown-linux-gnu": "c681f900e70f87705c067c7af5f6e256996783d5b281c71797e1fcffe2a84035",
+  "0.4.0-x86_64-unknown-linux-gnu": "88ee8421247912b91c05da1231d2316afb01ae39d486f28ecd3bf1a441cd640a",
   "0.1.22-aarch64-unknown-linux-gnu": "da7fc6dacb2db9ae12034698422ed1f8b0467f5b46d79fdb889689b61cfc97fd",
   "0.1.22-x86_64-unknown-linux-gnu": "497c0bbf6da724e90be49e48ade317d99567e4b03e4e86f03c0dac691ec6358f",
   "0.1.20-aarch64-unknown-linux-gnu": "c5b0729b60a407df397cb62a897cc4315cb603220d845e86b92bf5fa2b74b397",
@@ -100476,7 +100478,7 @@ try {
       root,
       directory: path7.join(directory, "bin"),
       binary: suppliedBinary,
-      version: getInput("version") || "0.1.22",
+      version: getInput("version") || "0.4.0",
       checksum: getInput("sha256"),
       dependencies: getBooleanInput("install-dependencies"),
       info
