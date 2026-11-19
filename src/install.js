@@ -103,12 +103,12 @@ const FFMPEG_RELEASE =
   "https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/autobuild-2026-10-31-12-59";
 const FFMPEG = {
   x64: {
-    name: "ffmpeg-n8.1.3-27-g8dca1586f4-linux64-gpl-8.1",
-    sha256: "41e9c565594c390622cf968d82fa4135d9e9a11d06c1515644288cbc844e3380",
+    name: "ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0",
+    sha256: "73e29a56974ae5a651133a04584c7483b21afe941e17dc91d79814a758b608d3",
   },
   arm64: {
-    name: "ffmpeg-n8.1.3-27-g8dca1586f4-linuxarm64-gpl-8.1",
-    sha256: "a08c0ee6e1c4e02139344b303002dcc7c37cf125d639f1fbd15dabee40fcb525",
+    name: "ffmpeg-n9.0.2-39-g7adfbe40dc-linuxarm64-gpl-9.0",
+    sha256: "6cad88ae5bcec356cfc5d7979a036cc4007128201928a0cf243df3db483276cc",
   },
 };
 
